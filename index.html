@@ -34,6 +34,9 @@ try{
   document.documentElement.className+=(hp?" hp":" lebar");
 }catch(e){document.documentElement.className+=" hp";}})();
 </script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;700;800&display=swap">
@@ -1018,6 +1021,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
   }
   var fullDone={};
   function lbPre(u){
+    if(window.CLOUD&&CLOUD.isBig(u)){if(Math.abs(lbItems.indexOf(u)-lbIdx)===1) CLOUD.big(u); return;}
     if(fullDone[u]) return;
     var p=new Image(); p.decoding="async"; p.onload=function(){fullDone[u]=1;}; p.src=u;
   }
@@ -1051,6 +1055,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       lbimg.src=ts;
       var p=new Image(); p.onload=function(){fullDone[full]=1; if(lbItems[lbIdx]===full) lbimg.src=full;}; p.src=full;
     }else lbimg.src=full;
+    if(window.CLOUD) CLOUD.big(full,function(b){if(lbItems[lbIdx]===full) lbimg.src=b;});
     lbimg.alt="Foto "+(lbIdx+1);
     lbcnt.textContent=lbItems.length>1?(lbIdx+1)+" / "+lbItems.length:"";
     lbSantri();
@@ -1260,6 +1265,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         var tf=thumbOf(src);
         if(tf!==src) im.addEventListener("error",function f(){im.removeEventListener("error",f);im.src=tf;});
         im.src=src;
+        if(window.CLOUD&&CLOUD.isBig(src)) CLOUD.big(src,function(b){im.src=b;});
       }else setThumb(im,src);
       if(n>8)im.loading="lazy";
       function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
@@ -1778,14 +1784,46 @@ button.b.alt.emas.ikon[hidden]{display:none}
     try{PIN=localStorage.getItem("album-pin")||"";}catch(e){}
     function cget(q,id){var u=CUS[ow[id]||0]||CU;return fetch(u+"?"+q).then(function(r){return r.json();});}
     function cpost(o,i){var u=CUS[i==null?CUS.length-1:i]||CU;return fetch(u,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){return r.json();});}
-    function b2u(j){var b=atob(j.d),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return URL.createObjectURL(new Blob([u],{type:j.m}));}
+    function b2b(j){var b=atob(j.d),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:j.m});}
+    function b2u(j){return URL.createObjectURL(b2b(j));}
+    var cbig={}, cfull={}, cwait={}, cload={}, CC=null;
+    try{if(window.caches) CC=caches.open("album-drive-v1").catch(function(){return null;});}catch(e){}
+    function ckey(id){return new Request(location.origin+"/__drive/"+id);}
+    function cacheGet(id){
+      if(!CC) return Promise.resolve(null);
+      return CC.then(function(c){return c?c.match(ckey(id)):null;}).then(function(r){return r?r.blob():null;}).catch(function(){return null;});
+    }
+    function cachePut(id,b,m){
+      if(!CC||b.size>1500000) return;
+      CC.then(function(c){if(c) c.put(ckey(id),new Response(b,{headers:{"Content-Type":m||b.type}}));}).catch(function(){});
+    }
+    function getUrl(id){
+      return cacheGet(id).then(function(b){
+        if(b) return URL.createObjectURL(b);
+        return cget("a=f&id="+id,id).then(function(j){var b2=b2b(j);cachePut(id,b2,j.m);return URL.createObjectURL(b2);});
+      });
+    }
+    function big(u,fn){
+      var id=cbig[u]; if(!id) return false;
+      if(cfull[id]){if(fn) fn(cfull[id]); return true;}
+      if(fn) (cwait[id]=cwait[id]||[]).push(fn);
+      if(!cload[id]){
+        cload[id]=1;
+        getUrl(id).then(function(b){cfull[id]=b;}).catch(function(){}).then(function(){
+          var w=cwait[id]||[]; delete cwait[id]; delete cload[id];
+          if(cfull[id]) w.forEach(function(f){f(cfull[id]);});
+        });
+      }
+      return true;
+    }
+    function pu(f,want){var x=f.p||f.i,u=urlOf(x,want); if(u!==PH&&f.p) cbig[u]=f.i; return u;}
     function urlOf(x,want){var u=cb[x]; if(!u&&u===undefined&&want){cb[x]=null;cq.push(x);pump();} return u||PH;}
     function build(){
       var m={}, sv=S.v==="santri";
       Object.keys(cp).forEach(function(n){var u=urlOf(cp[n],sv); (m[n]=m[n]||{}).profil=(u!==PH)?u:undefined;});
       Object.keys(cm).forEach(function(k){cm[k].forEach(function(f){
         if(f.t!=="i"||!f.s) return;
-        f.s.forEach(function(n){var e=m[n]=m[n]||{}; e.tanggal=e.tanggal||{}; (e.tanggal[k]=e.tanggal[k]||[]).push(urlOf(f.i,sv&&S.s===n));});
+        f.s.forEach(function(n){var e=m[n]=m[n]||{}; e.tanggal=e.tanggal||{}; (e.tanggal[k]=e.tanggal[k]||[]).push(pu(f,sv&&S.s===n));});
       });});
       return m;
     }
@@ -1801,17 +1839,31 @@ button.b.alt.emas.ikon[hidden]{display:none}
       }catch(e){}
     }
     function soon(){clearTimeout(rt);rt=setTimeout(refresh,150);}
+    function loadGroup(g,oi){
+      return Promise.all(g.map(function(x){return cacheGet(x).then(function(b){if(b){cb[x]=URL.createObjectURL(b);return null;}return x;});})).then(function(miss){
+        miss=miss.filter(Boolean); if(!miss.length) return;
+        var u=CUS[oi]||CU;
+        function single(){return Promise.all(miss.map(function(x){return getUrl(x).then(function(v){cb[x]=v;}).catch(function(){cb[x]=PH;});}));}
+        return fetch(u+"?a=b&ids="+miss.join(",")).then(function(r){return r.json();}).then(function(j){
+          if(!j||!j.r) return single();
+          j.r.forEach(function(e){if(e.d){var b2=b2b(e);cachePut(e.i,b2,e.m);cb[e.i]=URL.createObjectURL(b2);}else cb[e.i]=PH;});
+          miss.forEach(function(x){if(!cb[x]) cb[x]=PH;});
+        }).catch(function(){return single();});
+      });
+    }
     function pump(){
-      while(crun<3&&cq.length){
+      while(crun<4&&cq.length){
         crun++;
-        (function(x){cget("a=f&id="+x,x).then(function(j){cb[x]=b2u(j);}).catch(function(){cb[x]=PH;}).then(function(){crun--;soon();pump();});})(cq.shift());
+        var first=cq.shift(), oi=ow[first]||0, g=[first];
+        for(var q=0;q<cq.length&&g.length<8;){if((ow[cq[q]]||0)===oi){g.push(cq[q]);cq.splice(q,1);}else q++;}
+        (function(g,oi){loadGroup(g,oi).catch(function(){}).then(function(){crun--;soon();pump();});})(g,oi);
       }
     }
     function items(k){
       return (cm[k]||[]).map(function(f){
-        var x=f.t==="v"?f.p:f.i, u=cb[x];
+        var x=f.t==="v"?f.p:(f.p||f.i), u=cb[x];
         if(!u){if(u===undefined){cb[x]=null;cq.push(x);pump();}return PH;}
-        if(f.t==="v") cvid[u]=f.i;
+        if(f.t==="v") cvid[u]=f.i; else if(f.p) cbig[u]=f.i;
         return u;
       });
     }
@@ -1868,25 +1920,58 @@ button.b.alt.emas.ikon[hidden]{display:none}
       btn("Lanjut",function(){return [].map.call(l.querySelectorAll("input:checked"),function(i){return i.value;});});
       c.appendChild(l);c.appendChild(r);o.appendChild(c);document.body.appendChild(o);
     }
+    function mkThumb(f){return new Promise(function(ok){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){draw(im,im.width,im.height,640).then(function(b){URL.revokeObjectURL(u);ok(b);});};im.onerror=function(){URL.revokeObjectURL(u);ok(null);};im.src=u;});}
     function upload(files,tags){
-      var k=id(S.y,S.m,S.d), fl=[].slice.call(files), n=0; tb.disabled=true;
-      (function nxt(){
-        var f=fl.shift();
-        if(!f){tb.disabled=false;tb.textContent=lbl;refresh();return;}
-        n++;tb.textContent="Mengunggah "+n+"\u2026";
+      var k=id(S.y,S.m,S.d), fl=[].slice.call(files), tot=fl.length, n=0, aktif=0, stop=false, selesai=false; tb.disabled=true;
+      function fin(){if(selesai) return; selesai=true; tb.disabled=false; tb.textContent=lbl; refresh();}
+      function one(f){
         var vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type);
-        if(vid&&f.size>20*1048576){alert(f.name+" lebih dari 20 MB, dilewati.");return nxt();}
-        if(!vid&&asli&&f.size>25*1048576){alert(f.name+" lebih dari 25 MB, dilewati.");return nxt();}
-        Promise.all([asli?Promise.resolve(f):toJpg(f),vid?poster(f):Promise.resolve(null)]).then(function(r){
-          return Promise.all([b64(r[0]),r[1]?b64(r[1]):""]).then(function(d){return cpost({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});});
+        if(vid&&f.size>20*1048576){alert(f.name+" lebih dari 20 MB, dilewati.");return Promise.resolve();}
+        if(!vid&&asli&&f.size>25*1048576){alert(f.name+" lebih dari 25 MB, dilewati.");return Promise.resolve();}
+        return (asli?Promise.resolve(f):toJpg(f)).then(function(bl){
+          return (vid?poster(f):mkThumb(bl)).then(function(th){
+            return Promise.all([b64(bl),th?b64(th):""]).then(function(d){
+              return cpost({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});
+            });
+          });
         }).then(function(j){
-          if(!j.ok){fl.length=0;return bad(j);}
+          if(!j.ok){if(!stop){stop=true;fl.length=0;bad(j);}return;}
           (cm[k]=cm[k]||[]).push(j.f); ow[j.f.i]=CUS.length-1; if(j.f.p) ow[j.f.p]=CUS.length-1;
-        }).catch(function(){alert("Gagal mengunggah "+f.name);}).then(nxt);
-      })();
+        }).catch(function(){alert("Gagal mengunggah "+f.name);});
+      }
+      function jalan(){
+        while(aktif<2&&fl.length){
+          var f=fl.shift(); aktif++; n++; tb.textContent="Mengunggah "+n+"/"+tot+"\u2026";
+          one(f).then(function(){aktif--;jalan();});
+        }
+        if(!aktif&&!fl.length) fin();
+      }
+      jalan();
     }
-    window.CLOUD={keys:function(){return Object.keys(cm);},items:items,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
+    window.CLOUD={big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
     if(!CU) return;
+    /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
+    (function(){
+      var el=document.querySelector(".sub p"); if(!el) return;
+      var n=0,t=0; el.style.touchAction="manipulation";
+      el.addEventListener("click",function(){
+        clearTimeout(t); n++; t=setTimeout(function(){n=0;},1500);
+        if(n<5) return; n=0;
+        if(window.CLOUD_OWNER){
+          if(confirm("Keluar dari mode pemilik di perangkat ini?")){
+            try{localStorage.removeItem("album-owner");localStorage.removeItem("album-pin");}catch(e){}
+            location.reload();
+          }
+          return;
+        }
+        var p=prompt("Masukkan PIN pemilik"); if(!p) return;
+        cpost({a:"cek",pin:p},0).then(function(j){
+          if(j&&j.e==="pin"){alert("PIN salah.");return;}
+          try{localStorage.setItem("album-owner","1");localStorage.setItem("album-pin",p);}catch(e){}
+          location.reload();
+        }).catch(function(){alert("Gagal terhubung.");});
+      });
+    })();
     tb.hidden=!window.CLOUD_OWNER;
     tb.addEventListener("click",function(){if(ensurePin()){inp.value="";inp.click();}});
     inp.addEventListener("change",function(){
@@ -1985,8 +2070,8 @@ document.addEventListener("keydown",function(e){
   var ins=document.getElementById("ins");
   if(ins) ins.addEventListener("click",function(){ins.classList.add("sibuk");setTimeout(function(){ins.classList.remove("sibuk");},1000);});
 })();
-/* bersihkan service worker sisa repo lama, bila ada */
-if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister();});}).catch(function(){});}
+/* service worker: syarat agar aplikasi bisa dipasang dan tetap terbuka saat offline */
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(function(){});});}
 </script>
 </body>
 </html>
