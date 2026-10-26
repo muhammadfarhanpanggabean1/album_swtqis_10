@@ -1784,6 +1784,18 @@ button.b.alt.emas.ikon[hidden]{display:none}
     try{PIN=localStorage.getItem("album-pin")||"";}catch(e){}
     function cget(q,id){var u=CUS[ow[id]||0]||CU;return fetch(u+"?"+q).then(function(r){return r.json();});}
     function cpost(o,i){var u=CUS[i==null?CUS.length-1:i]||CU;return fetch(u,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){return r.json();});}
+    /* Unggah berurutan: akun pertama dulu; bila penuh/gagal simpan, lanjut ke akun berikutnya.
+       Akun yang sudah penuh dilewati selama halaman ini terbuka (muat ulang halaman untuk mencoba lagi). */
+    var penuh=[];
+    function kirim(o,i){
+      i=i||0; while(i<CUS.length&&penuh[i]) i++;
+      if(i>=CUS.length) return Promise.resolve({ok:false,e:"Semua akun penyimpanan penuh atau gagal."});
+      return cpost(o,i).then(function(j){
+        if(j&&j.ok){j.ai=i;return j;}
+        if(j&&j.r){penuh[i]=true; if(i+1<CUS.length) return kirim(o,i+1);}
+        return j;
+      });
+    }
     function b2b(j){var b=atob(j.d),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:j.m});}
     function b2u(j){return URL.createObjectURL(b2b(j));}
     var cbig={}, cfull={}, cwait={}, cload={}, CC=null;
@@ -1922,8 +1934,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
     }
     function mkThumb(f){return new Promise(function(ok){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){draw(im,im.width,im.height,640).then(function(b){URL.revokeObjectURL(u);ok(b);});};im.onerror=function(){URL.revokeObjectURL(u);ok(null);};im.src=u;});}
     function upload(files,tags){
-      var k=id(S.y,S.m,S.d), fl=[].slice.call(files), tot=fl.length, n=0, aktif=0, stop=false, selesai=false; tb.disabled=true;
-      function fin(){if(selesai) return; selesai=true; tb.disabled=false; tb.textContent=lbl; refresh();}
+      var k=id(S.y,S.m,S.d), fl=[].slice.call(files), tot=fl.length, n=0, aktif=0, stop=false, selesai=false, ringkas={}; tb.disabled=true;
+      function fin(){if(selesai) return; selesai=true; tb.disabled=false; tb.textContent=lbl; refresh();
+        var ks=Object.keys(ringkas);
+        if(ks.length){var t="Tersimpan di akun "+ks.map(function(a){return a+" ("+ringkas[a]+")";}).join(", ");
+          tb.textContent=t; setTimeout(function(){if(tb.textContent===t) tb.textContent=lbl;},4000);}
+      }
       function one(f){
         var vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type);
         if(vid&&f.size>20*1048576){alert(f.name+" lebih dari 20 MB, dilewati.");return Promise.resolve();}
@@ -1931,12 +1947,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
         return (asli?Promise.resolve(f):toJpg(f)).then(function(bl){
           return (vid?poster(f):mkThumb(bl)).then(function(th){
             return Promise.all([b64(bl),th?b64(th):""]).then(function(d){
-              return cpost({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});
+              return kirim({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});
             });
           });
         }).then(function(j){
           if(!j.ok){if(!stop){stop=true;fl.length=0;bad(j);}return;}
-          (cm[k]=cm[k]||[]).push(j.f); ow[j.f.i]=CUS.length-1; if(j.f.p) ow[j.f.p]=CUS.length-1;
+          (cm[k]=cm[k]||[]).push(j.f); ow[j.f.i]=j.ai; if(j.f.p) ow[j.f.p]=j.ai; var nm=j.akun||("#"+(j.ai+1)); ringkas[nm]=(ringkas[nm]||0)+1;
         }).catch(function(){alert("Gagal mengunggah "+f.name);});
       }
       function jalan(){
@@ -1965,8 +1981,9 @@ button.b.alt.emas.ikon[hidden]{display:none}
           return;
         }
         var p=prompt("Masukkan PIN pemilik"); if(!p) return;
-        cpost({a:"cek",pin:p},0).then(function(j){
-          if(j&&j.e==="pin"){alert("PIN salah.");return;}
+        Promise.all(CUS.map(function(u,i){return cpost({a:"cek",pin:p},i);})).then(function(rs){
+          var x=rs.findIndex(function(j){return j&&j.e==="pin";});
+          if(x>=0){alert(CUS.length>1?"PIN salah di akun ke-"+(x+1)+" (PIN harus sama di semua akun).":"PIN salah.");return;}
           try{localStorage.setItem("album-owner","1");localStorage.setItem("album-pin",p);}catch(e){}
           location.reload();
         }).catch(function(){alert("Gagal terhubung.");});
@@ -1983,10 +2000,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
     inp2.addEventListener("change",function(){
       var f=inp2.files[0], n=S.s; if(!f||!n) return;
       sp.disabled=true;sp.textContent="Mengunggah\u2026";
-      var pi=(cp[n]!==undefined&&ow[cp[n]]!==undefined)?ow[cp[n]]:CUS.length-1;
-      toJpg(f).then(b64).then(function(d){return cpost({a:"prof",pin:PIN,n:n,d:d},pi);}).then(function(j){
+      var ada=(cp[n]!==undefined&&ow[cp[n]]!==undefined), pi=ada?ow[cp[n]]:0;
+      toJpg(f).then(b64).then(function(d){var o={a:"prof",pin:PIN,n:n,d:d}; return ada?cpost(o,pi).then(function(j){j.ai=pi;return j;}):kirim(o,0);}).then(function(j){
         if(!j.ok) return bad(j);
-        cp[n]=j.i; ow[j.i]=pi; delete cb[j.i]; refresh();
+        pi=j.ai; cp[n]=j.i; ow[j.i]=pi; delete cb[j.i]; refresh();
       }).catch(function(){alert("Gagal mengunggah.");}).then(function(){sp.disabled=false;sp.textContent="Ganti foto profil";});
     });
     Promise.all(CUS.map(function(u,i){return fetch(u+"?a=l").then(function(r){return r.json();}).then(function(j){return {i:i,j:j};}).catch(function(){return null;});})).then(function(rs){
