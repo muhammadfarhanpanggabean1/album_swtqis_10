@@ -6,6 +6,10 @@
 <title>Album SWTQIS-10</title>
 <script>
 window.CLOUD_URL="https://script.google.com/macros/s/AKfycbwLVQ9nvKiSYWDsPYsu05sMELf_TQ4HF_fI-zD77HHaKtz6Wi8nUEHoZrCyvP9LC6yG/exec";/* tempel alamat Web App Apps Script di sini */
+window.CLOUD_URLS=[
+  window.CLOUD_URL
+  /* akun Drive kedua dst: tambahkan koma, lalu alamat /exec-nya dalam tanda kutip */
+];
 /* mode pemilik: buka sekali alamat album dengan ?pemilik di belakangnya; ?keluar untuk mematikan */
 window.CLOUD_OWNER=false;
 try{
@@ -1769,11 +1773,11 @@ button.b.alt.emas.ikon[hidden]{display:none}
 
   /* ===== Google Drive lewat Apps Script: foto/video disimpan di Drive pemilik, pengunjung hanya melihat lewat app ===== */
   (function(){
-    var CU=window.CLOUD_URL||"", cm={}, cp={}, cb={}, cq=[], crun=0, cvid={}, PIN="", rt=0;
+    var CUS=(window.CLOUD_URLS&&window.CLOUD_URLS.length?window.CLOUD_URLS:[window.CLOUD_URL||""]).filter(Boolean), CU=CUS[0]||"", ow={}, cm={}, cp={}, cb={}, cq=[], crun=0, cvid={}, PIN="", rt=0;
     var PH="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
     try{PIN=localStorage.getItem("album-pin")||"";}catch(e){}
-    function cget(q){return fetch(CU+"?"+q).then(function(r){return r.json();});}
-    function cpost(o){return fetch(CU,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){return r.json();});}
+    function cget(q,id){var u=CUS[ow[id]||0]||CU;return fetch(u+"?"+q).then(function(r){return r.json();});}
+    function cpost(o,i){var u=CUS[i==null?CUS.length-1:i]||CU;return fetch(u,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){return r.json();});}
     function b2u(j){var b=atob(j.d),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return URL.createObjectURL(new Blob([u],{type:j.m}));}
     function urlOf(x,want){var u=cb[x]; if(!u&&u===undefined&&want){cb[x]=null;cq.push(x);pump();} return u||PH;}
     function build(){
@@ -1800,7 +1804,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     function pump(){
       while(crun<3&&cq.length){
         crun++;
-        (function(x){cget("a=f&id="+x).then(function(j){cb[x]=b2u(j);}).catch(function(){cb[x]=PH;}).then(function(){crun--;soon();pump();});})(cq.shift());
+        (function(x){cget("a=f&id="+x,x).then(function(j){cb[x]=b2u(j);}).catch(function(){cb[x]=PH;}).then(function(){crun--;soon();pump();});})(cq.shift());
       }
     }
     function items(k){
@@ -1822,7 +1826,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       var v=null; x.onclick=function(){if(v)v.pause();o.remove();};
       function go(src){o.firstChild.textContent="";v=document.createElement("video");v.controls=true;v.playsInline=true;v.autoplay=true;v.src=src;v.style.cssText="max-width:100%;max-height:100%";o.insertBefore(v,x);}
       if(cb["v"+vid]) go(cb["v"+vid]);
-      else cget("a=f&id="+vid).then(function(j){cb["v"+vid]=b2u(j);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){o.firstChild.textContent="Gagal memuat video";});
+      else cget("a=f&id="+vid,vid).then(function(j){cb["v"+vid]=b2u(j);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){o.firstChild.textContent="Gagal memuat video";});
     }
     function bad(j){
       if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){}alert("PIN salah.");}
@@ -1830,7 +1834,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     }
     function del(k,i){
       if(!confirm("Hapus dari Drive?")) return;
-      cpost({a:"del",pin:PIN,i:cm[k][i].i}).then(function(j){
+      cpost({a:"del",pin:PIN,i:cm[k][i].i},ow[cm[k][i].i]).then(function(j){
         if(!j.ok) return bad(j);
         cm[k].splice(i,1); if(!cm[k].length) delete cm[k]; refresh();
       }).catch(function(){alert("Gagal terhubung.");});
@@ -1877,7 +1881,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
           return Promise.all([b64(r[0]),r[1]?b64(r[1]):""]).then(function(d){return cpost({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});});
         }).then(function(j){
           if(!j.ok){fl.length=0;return bad(j);}
-          (cm[k]=cm[k]||[]).push(j.f);
+          (cm[k]=cm[k]||[]).push(j.f); ow[j.f.i]=CUS.length-1; if(j.f.p) ow[j.f.p]=CUS.length-1;
         }).catch(function(){alert("Gagal mengunggah "+f.name);}).then(nxt);
       })();
     }
@@ -1894,12 +1898,21 @@ button.b.alt.emas.ikon[hidden]{display:none}
     inp2.addEventListener("change",function(){
       var f=inp2.files[0], n=S.s; if(!f||!n) return;
       sp.disabled=true;sp.textContent="Mengunggah\u2026";
-      toJpg(f).then(b64).then(function(d){return cpost({a:"prof",pin:PIN,n:n,d:d});}).then(function(j){
+      var pi=(cp[n]!==undefined&&ow[cp[n]]!==undefined)?ow[cp[n]]:CUS.length-1;
+      toJpg(f).then(b64).then(function(d){return cpost({a:"prof",pin:PIN,n:n,d:d},pi);}).then(function(j){
         if(!j.ok) return bad(j);
-        cp[n]=j.i; delete cb[j.i]; refresh();
+        cp[n]=j.i; ow[j.i]=pi; delete cb[j.i]; refresh();
       }).catch(function(){alert("Gagal mengunggah.");}).then(function(){sp.disabled=false;sp.textContent="Ganti foto profil";});
     });
-    cget("a=l").then(function(j){cm=j.k||{};cp=j.p||{};refresh();}).catch(function(){});
+    Promise.all(CUS.map(function(u,i){return fetch(u+"?a=l").then(function(r){return r.json();}).then(function(j){return {i:i,j:j};}).catch(function(){return null;});})).then(function(rs){
+      cm={};cp={};
+      rs.forEach(function(r){
+        if(!r||!r.j) return; var j=r.j;
+        Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
+        Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
+      });
+      refresh();
+    });
   })();
   S=parse(); initHist(); show();
 })();
