@@ -1469,7 +1469,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     var box=document.getElementById("ggal"), inf=document.getElementById("gjml");
     var seen={}, keys=[], total=0, lastY="", lastYM="";
     box.innerHTML="";
-    Object.keys(repo).concat(Object.keys(data)).forEach(function(k){
+    Object.keys(repo).concat(Object.keys(data)).concat(window.CLOUD?CLOUD.keys():[]).forEach(function(k){
       if(seen[k]||!/^\d{4}-\d{2}-\d{2}$/.test(k)) return; seen[k]=1;
       if(all(k).length) keys.push(k);
     });
@@ -1870,17 +1870,18 @@ button.b.alt.emas.ikon[hidden]{display:none}
         var f=fl.shift();
         if(!f){tb.disabled=false;tb.textContent=lbl;refresh();return;}
         n++;tb.textContent="Mengunggah "+n+"\u2026";
-        var vid=/^video\//.test(f.type);
+        var vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type);
         if(vid&&f.size>20*1048576){alert(f.name+" lebih dari 20 MB, dilewati.");return nxt();}
-        Promise.all([vid?Promise.resolve(f):toJpg(f),vid?poster(f):Promise.resolve(null)]).then(function(r){
-          return Promise.all([b64(r[0]),r[1]?b64(r[1]):""]).then(function(d){return cpost({a:"up",pin:PIN,k:k,m:vid?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});});
+        if(!vid&&asli&&f.size>25*1048576){alert(f.name+" lebih dari 25 MB, dilewati.");return nxt();}
+        Promise.all([asli?Promise.resolve(f):toJpg(f),vid?poster(f):Promise.resolve(null)]).then(function(r){
+          return Promise.all([b64(r[0]),r[1]?b64(r[1]):""]).then(function(d){return cpost({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});});
         }).then(function(j){
           if(!j.ok){fl.length=0;return bad(j);}
           (cm[k]=cm[k]||[]).push(j.f);
         }).catch(function(){alert("Gagal mengunggah "+f.name);}).then(nxt);
       })();
     }
-    window.CLOUD={items:items,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
+    window.CLOUD={keys:function(){return Object.keys(cm);},items:items,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
     if(!CU) return;
     tb.hidden=!window.CLOUD_OWNER;
     tb.addEventListener("click",function(){if(ensurePin()){inp.value="";inp.click();}});
