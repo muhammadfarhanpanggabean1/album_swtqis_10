@@ -176,6 +176,7 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
 .ph img{width:100%;height:auto;display:block;object-fit:cover}
 .ph button{position:absolute;top:6px;right:6px;border:0;border-radius:999px;width:28px;height:28px;background:rgba(60,40,30,.75);color:#fff;font-size:16px;cursor:pointer}
 .ph button::after{content:"";position:absolute;inset:-8px}
+.ph button.cv{right:auto;left:6px;font-size:15px;line-height:1;padding:0}
 .ph img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lb{position:fixed;inset:0;z-index:50;background:rgba(30,20,15,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 12px calc(16px + env(safe-area-inset-bottom,0px));transition:background .3s ease}
 .lb[hidden]{display:none}
@@ -519,6 +520,15 @@ button.b.alt.emas.ikon[hidden]{display:none}
     img.src=t;
   }
   function all(k){return (repo[k]||[]).map(function(s){return ROOT+s;}).concat(data[k]||[]).concat(window.CLOUD?CLOUD.items(k):[]);}
+  /* sampul tanggal pilihan pemilik (id foto Drive / path foto repo); bila kosong atau tidak ditemukan, tetap foto pertama */
+  var COV={};
+  function coverIdx(k){
+    try{
+      var v=COV[k]; if(!v) return 0;
+      var keys=(repo[k]||[]).concat((data[k]||[]).map(function(){return "";})).concat(window.CLOUD&&CLOUD.ids?CLOUD.ids(k):[]);
+      var i=keys.indexOf(v); return i>0?i:0;
+    }catch(e){return 0;}
+  }
   /* ===== Daftar santri =====
      Foto: taruh di folder santri/ dengan nama sesuai slug, mis. santri/abdurrahman-hanif.jpg
      Jika foto belum ada, otomatis tampil inisial nama. */
@@ -677,7 +687,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       b.setAttribute("aria-label",d+" "+BULAN[m-1]+" "+y+", "+l.length+" foto");
       var h='<span class="n">'+d+'</span>';
       if(l.length) h='<img alt="">'+h+'<span class="c">'+l.length+'</span>';
-      b.innerHTML=h; if(l.length) setThumb(b.querySelector("img"),l[0]); b.disabled=!l.length&&!(window.CLOUD_URL&&window.CLOUD_OWNER); if(l.length||(window.CLOUD_URL&&window.CLOUD_OWNER))(function(dd,bb,ada){bb.addEventListener("click",function(){openDay(dd,ada?bb:null);});})(d,b,l.length>0);
+      b.innerHTML=h; if(l.length) setThumb(b.querySelector("img"),l[coverIdx(id(y,m,d))]||l[0]); b.disabled=!l.length&&!(window.CLOUD_URL&&window.CLOUD_OWNER); if(l.length||(window.CLOUD_URL&&window.CLOUD_OWNER))(function(dd,bb,ada){bb.addEventListener("click",function(){openDay(dd,ada?bb:null);});})(d,b,l.length>0);
       el.appendChild(b);
     }
     /* selalu 6 baris agar tinggi kalender tetap dan kartu di bawahnya tidak berpindah */
@@ -1257,7 +1267,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
     var k=id(S.y,S.m,S.d), r=repo[k]||[], l=data[k]||[], cl=window.CLOUD?CLOUD.items(k):[]; box.innerHTML="";
     if(!r.length&&!l.length&&!cl.length){box.innerHTML='<p class="empty-msg" style="grid-column:1/-1">Belum ada foto di tanggal ini.</p>';return;}
     var items=r.map(function(f){return ROOT+f;}).concat(l).concat(cl), thumbs=[];
-    function cell(src,n,del){
+    var cids=window.CLOUD&&CLOUD.ids?CLOUD.ids(k):[];
+    function cell(src,n,del,key){
       var w=document.createElement("div");w.className="ph";
       var im=document.createElement("img");im.decoding="async";im.alt="Foto "+n;im.tabIndex=0;thumbs[n-1]=im;
       /* ukuran Besar: satu kolom lebar, pakai foto asli agar tetap tajam */
@@ -1271,11 +1282,19 @@ button.b.alt.emas.ikon[hidden]{display:none}
       function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
       im.addEventListener("load",fit);longPress(im,items,n-1,thumbs);w.appendChild(im);if(im.complete)fit();
       if(del){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Hapus foto "+n);x.addEventListener("click",del);w.appendChild(x);}
+      /* mode pemilik: pilih foto ini sebagai sampul tanggal (ketuk lagi untuk mengembalikan ke foto pertama) */
+      if(key&&window.CLOUD&&CLOUD.owner()&&CLOUD.setCover){
+        var on=coverIdx(k)===n-1, cv=document.createElement("button");
+        cv.type="button"; cv.className="cv"; cv.textContent=on?"\u2605":"\u2606";
+        cv.setAttribute("aria-label",on?"Batalkan sampul tanggal":"Jadikan sampul tanggal");
+        cv.addEventListener("click",function(){CLOUD.setCover(k,on?"":key);});
+        w.appendChild(cv);
+      }
       box.appendChild(w);
     }
-    r.forEach(function(f,i){cell(ROOT+f,i+1);});
+    r.forEach(function(f,i){cell(ROOT+f,i+1,null,f);});
     l.forEach(function(f,i){cell(f,r.length+i+1,function(){l.splice(i,1);if(!l.length)delete data[k];save();list();renderMonth();});});
-    cl.forEach(function(u,i){cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null);});
+    cl.forEach(function(u,i){cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null,cids[i]);});
     /* siapkan foto asli pertama di latar belakang agar pratinjau langsung tajam */
     setTimeout(function(){items.slice(0,3).forEach(function(u){var p=new Image();p.decoding="async";p.src=u;});},500);
   }
@@ -1288,7 +1307,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       [1,-1,2,-2].forEach(function(o){
         var k=base+o; if(k<MIN||k>MAX) return;
         var y=Math.floor(k/12), m=k%12+1;
-        for(var d=1;d<=dim(y,m);d++){var l=all(id(y,m,d)); if(l.length){var u=thumbOf(l[0]);if(u!==l[0]&&!warmed[u]){warmed[u]=1;q.push(u);}}}
+        for(var d=1;d<=dim(y,m);d++){var l=all(id(y,m,d)); if(l.length){var c0=l[coverIdx(id(y,m,d))]||l[0],u=thumbOf(c0);if(u!==c0&&!warmed[u]){warmed[u]=1;q.push(u);}}}
       });
       (function next(){
         var u=q.shift(); if(!u) return;
@@ -1964,7 +1983,17 @@ button.b.alt.emas.ikon[hidden]{display:none}
       }
       jalan();
     }
-    window.CLOUD={big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
+    function ids(k){return (cm[k]||[]).map(function(f){return f.i;});}
+    /* simpan sampul tanggal di akun pertama (Code.gs aksi "cov"); gagal = tampilan tetap seperti semula */
+    function setCover(k,v){
+      if(!ensurePin()) return;
+      cpost({a:"cov",pin:PIN,k:k,v:v},0).then(function(j){
+        if(j&&j.ok){if(v) COV[k]=v; else delete COV[k]; refresh(); return;}
+        if(j&&j.e==="aksi tidak dikenal") alert("Perbarui Code.gs di Apps Script dan deploy ulang dulu agar sampul bisa disimpan.");
+        else bad(j);
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    window.CLOUD={big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
     if(!CU) return;
     /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
     (function(){
@@ -2012,6 +2041,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         if(!r||!r.j) return; var j=r.j;
         Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
+        if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
       });
       refresh();
     });
