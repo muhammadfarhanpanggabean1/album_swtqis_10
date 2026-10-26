@@ -1294,7 +1294,11 @@ button.b.alt.emas.ikon[hidden]{display:none}
     }
     r.forEach(function(f,i){cell(ROOT+f,i+1,null,f);});
     l.forEach(function(f,i){cell(f,r.length+i+1,function(){l.splice(i,1);if(!l.length)delete data[k];save();list();renderMonth();});});
-    cl.forEach(function(u,i){cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null,cids[i]);});
+    cl.forEach(function(u,i){
+      var tmp=/^tmp-/.test(cids[i]||"");
+      cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null,tmp?null:cids[i]);
+      if(tmp){var w=box.lastChild; w.style.opacity=".65"; w.insertAdjacentHTML("beforeend",'<i style="position:absolute;left:6px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(60,40,30,.75);color:#fff;font-size:12px;font-style:normal;pointer-events:none">Mengunggah\u2026</i>');}
+    });
     /* siapkan foto asli pertama di latar belakang agar pratinjau langsung tajam */
     setTimeout(function(){items.slice(0,3).forEach(function(u){var p=new Image();p.decoding="async";p.src=u;});},500);
   }
@@ -1916,6 +1920,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       else alert((j&&j.e)||"Gagal.");
     }
     function del(k,i){
+      if(cm[k]&&cm[k][i]&&cm[k][i].tmp){alert("File ini masih diunggah, tunggu selesai dulu.");return;}
       if(!confirm("Hapus dari Drive?")) return;
       cpost({a:"del",pin:PIN,i:cm[k][i].i},ow[cm[k][i].i]).then(function(j){
         if(!j.ok) return bad(j);
@@ -1942,7 +1947,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       o.style.cssText="position:fixed;inset:0;z-index:95;background:rgba(30,20,15,.55);display:flex;align-items:center;justify-content:center;padding:16px";
       var c=document.createElement("div");
       c.style.cssText="width:min(380px,100%);max-height:85vh;display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border-radius:20px;padding:14px";
-      var h=document.createElement("b");h.textContent="Tandai santri di foto ini (opsional)";h.style.marginBottom="8px";c.appendChild(h);
+      var h=document.createElement("b");h.textContent="Tandai santri di foto/video ini (opsional)";h.style.marginBottom="8px";c.appendChild(h);
       var l=document.createElement("div");l.style.cssText="overflow-y:auto;flex:1;margin-bottom:10px";
       SANTRI.forEach(function(n){var lab=document.createElement("label"),i=document.createElement("input");lab.style.cssText="display:flex;gap:8px;padding:6px 2px;align-items:center";i.type="checkbox";i.value=slugOf(n);lab.appendChild(i);lab.appendChild(document.createTextNode(n));l.appendChild(lab);});
       var r=document.createElement("div");r.style.cssText="display:flex;gap:8px";
@@ -1952,36 +1957,68 @@ button.b.alt.emas.ikon[hidden]{display:none}
       c.appendChild(l);c.appendChild(r);o.appendChild(c);document.body.appendChild(o);
     }
     function mkThumb(f){return new Promise(function(ok){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){draw(im,im.width,im.height,640).then(function(b){URL.revokeObjectURL(u);ok(b);});};im.onerror=function(){URL.revokeObjectURL(u);ok(null);};im.src=u;});}
-    function upload(files,tags){
-      var k=id(S.y,S.m,S.d), fl=[].slice.call(files), tot=fl.length, n=0, aktif=0, stop=false, selesai=false, ringkas={}; tb.disabled=true;
-      function fin(){if(selesai) return; selesai=true; tb.disabled=false; tb.textContent=lbl; refresh();
-        var ks=Object.keys(ringkas);
-        if(ks.length){var t="Tersimpan di akun "+ks.map(function(a){return a+" ("+ringkas[a]+")";}).join(", ");
-          tb.textContent=t; setTimeout(function(){if(tb.textContent===t) tb.textContent=lbl;},4000);}
+    /* ===== Unggah tanpa antrean: foto tampil langsung dari perangkat, kirim ke Drive di latar belakang (4 sekaligus) ===== */
+    var Q=[], aktif=0, tot=0, sel=0, ringkas={}, gagal=[], tmpN=0, MAXP=4;
+    function dropTmp(job){var l=cm[job.k],a=l?l.indexOf(job.t):-1; if(a>=0){l.splice(a,1); if(!l.length) delete cm[job.k];} try{URL.revokeObjectURL(job.u);}catch(e){}}
+    function enq(f,k,tags){
+      var vid=/^video\//.test(f.type), tid="tmp-"+(++tmpN), pid=tid+"-p", u=URL.createObjectURL(f);
+      var t={i:tid,t:vid?"v":"i",p:vid?pid:"",s:tags,tmp:1};
+      if(vid){cb[pid]=null;cb["v"+tid]=u;}else cb[tid]=u;
+      (cm[k]=cm[k]||[]).push(t); tot++; Q.push({f:f,k:k,tags:tags,t:t,u:u});
+    }
+    function fin(){
+      var ks=Object.keys(ringkas), g=gagal.splice(0);
+      tb.textContent=lbl; tot=0; sel=0;
+      if(ks.length){var tx="Tersimpan di akun "+ks.map(function(a){return a+" ("+ringkas[a]+")";}).join(", ");
+        tb.textContent=tx; setTimeout(function(){if(tb.textContent===tx) tb.textContent=lbl;},4000);}
+      ringkas={}; refresh();
+      if(g.length&&confirm(g.length+" file gagal diunggah:\n"+g.map(function(x){return "\u2022 "+x.f.name+": "+x.e;}).join("\n")+"\n\nCoba lagi?")){
+        g.forEach(function(x){enq(x.f,x.k,x.tags);}); refresh(); jalan();
       }
-      function one(f){
-        var vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type);
-        if(vid&&f.size>20*1048576){alert(f.name+" lebih dari 20 MB, dilewati.");return Promise.resolve();}
-        if(!vid&&asli&&f.size>25*1048576){alert(f.name+" lebih dari 25 MB, dilewati.");return Promise.resolve();}
-        return (asli?Promise.resolve(f):toJpg(f)).then(function(bl){
-          return (vid?poster(f):mkThumb(bl)).then(function(th){
-            return Promise.all([b64(bl),th?b64(th):""]).then(function(d){
-              return kirim({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:vid?[]:tags});
-            });
+    }
+    function one(job){
+      var f=job.f, k=job.k, t=job.t, vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type), tu=null;
+      return (asli?Promise.resolve(f):toJpg(f)).then(function(bl){
+        return (vid?poster(f):mkThumb(bl)).then(function(th){
+          if(th) tu=URL.createObjectURL(th);
+          if(vid&&tu){cb[t.p]=tu; soon();}
+          return Promise.all([b64(bl),th?b64(th):""]).then(function(d){
+            return kirim({a:"up",pin:PIN,k:k,m:asli?f.type:"image/jpeg",d:d[0],p:d[1],s:job.tags});
           });
-        }).then(function(j){
-          if(!j.ok){if(!stop){stop=true;fl.length=0;bad(j);}return;}
-          (cm[k]=cm[k]||[]).push(j.f); ow[j.f.i]=j.ai; if(j.f.p) ow[j.f.p]=j.ai; var nm=j.akun||("#"+(j.ai+1)); ringkas[nm]=(ringkas[nm]||0)+1;
-        }).catch(function(){alert("Gagal mengunggah "+f.name);});
-      }
-      function jalan(){
-        while(aktif<2&&fl.length){
-          var f=fl.shift(); aktif++; n++; tb.textContent="Mengunggah "+n+"/"+tot+"\u2026";
-          one(f).then(function(){aktif--;jalan();});
+        });
+      }).then(function(j){
+        var l=cm[k], a=l?l.indexOf(t):-1;
+        if(!j||!j.ok){
+          dropTmp(job);
+          var e=(j&&j.e)||"ditolak oleh Google";
+          if(e==="pin"||/penuh/.test(e)){Q.splice(0).forEach(dropTmp); bad(j);}
+          else gagal.push({f:f,k:k,tags:job.tags,e:e});
+          return;
         }
-        if(!aktif&&!fl.length) fin();
+        var nf=j.f; if(a>=0) l[a]=nf; else (cm[k]=cm[k]||[]).push(nf);
+        ow[nf.i]=j.ai; if(nf.p) ow[nf.p]=j.ai;
+        var x=nf.t==="v"?nf.p:(nf.p||nf.i);
+        if(x&&!cb[x]) cb[x]=tu||(nf.t==="i"?job.u:null);
+        if(vid) cb["v"+nf.i]=job.u; else if(cb[x]!==job.u) URL.revokeObjectURL(job.u);
+        delete cb[t.i]; delete cb[t.p]; delete cb["v"+t.i];
+        var nm=j.akun||("#"+(j.ai+1)); ringkas[nm]=(ringkas[nm]||0)+1;
+      }).catch(function(){
+        dropTmp(job);
+        gagal.push({f:f,k:k,tags:job.tags,e:"gagal terkirim (koneksi putus, atau file terlalu besar untuk batas kiriman Google)"});
+      });
+    }
+    function jalan(){
+      while(aktif<MAXP&&Q.length){
+        var job=Q.shift(); aktif++;
+        one(job).then(function(){aktif--; sel++; soon(); jalan();});
       }
-      jalan();
+      if(tot) tb.textContent="Mengunggah "+Math.min(sel+aktif,tot)+"/"+tot+"\u2026";
+      if(!aktif&&!Q.length&&tot) fin();
+    }
+    function upload(files,tags){
+      var k=id(S.y,S.m,S.d);
+      [].slice.call(files).forEach(function(f){enq(f,k,tags);});
+      refresh(); jalan();
     }
     function ids(k){return (cm[k]||[]).map(function(f){return f.i;});}
     /* simpan sampul tanggal di akun pertama (Code.gs aksi "cov"); gagal = tampilan tetap seperti semula */
@@ -2022,8 +2059,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     tb.addEventListener("click",function(){if(ensurePin()){inp.value="";inp.click();}});
     inp.addEventListener("change",function(){
       var fs=[].slice.call(inp.files); if(!fs.length) return;
-      if(fs.some(function(f){return !/^video\//.test(f.type);})) pickSantri(function(t){if(t) upload(fs,t);});
-      else upload(fs,[]);
+      pickSantri(function(t){if(t) upload(fs,t);});
     });
     sp.addEventListener("click",function(){if(ensurePin()){inp2.value="";inp2.click();}});
     inp2.addEventListener("change",function(){
