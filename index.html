@@ -2145,7 +2145,9 @@ button.b.alt.emas.ikon[hidden]{display:none}
     function ownerLoad(sl){
       if(!PVP[sl]) PVP[sl]=kodes().then(function(m){
         if(!m[sl]){PV[sl]=PV[sl]||{}; return true;}
-        return loadPriv(sl,m[sl]);
+        PCODE[sl]=m[sl];
+        /* samakan kode santri di semua akun dulu: memperbaiki kode lama/hilang di akun lain agar file di sana ikut terbaca */
+        return Promise.all(CUS.map(function(u,i){return syncKode(sl,i);})).then(function(){return loadPriv(sl,m[sl]);});
       }).catch(function(){PVP[sl]=null; return false;});
       return PVP[sl];
     }
@@ -2361,11 +2363,27 @@ button.b.alt.emas.ikon[hidden]{display:none}
             (d.cocok||[]).slice(0,3).forEach(function(n){L.push("    \u2022 "+n);});
             if(!d.jml&&d.semua) L.push("  Ada "+d.semua+" file khusus untuk santri lain: "+Object.keys(d.slugs||{}).join(", "));
             if(!kode) return L.concat(["  (daftar tidak diuji: kode di akun pertama belum ada)"]);
-            return fetch(url+"?a=pl&n="+sl+"&c="+encodeURIComponent(kode)).then(function(r){return r.json();}).then(function(j){
-              if(j&&j.ok){var c=0; Object.keys(j.k||{}).forEach(function(k){c+=j.k[k].length;}); L.push("  Daftar terbaca oleh aplikasi: "+c+" file");}
-              else L.push("  Daftar DITOLAK (kode di akun ini berbeda/tidak ada)");
+            /* uji tiga permintaan baca ke akun ini dan tampilkan alasan gagalnya apa adanya */
+            function probe(q){
+              return fetch(url+"?"+q,{cache:"no-store"}).then(function(r){
+                return r.text().then(function(t){var j=null; try{j=JSON.parse(t);}catch(e){} return {st:r.status,j:j,t:t};});
+              }).catch(function(e){return {err:String((e&&e.message)||e)};});
+            }
+            function ring(x,okf){
+              if(x.err) return "GAGAL ("+x.err+")";
+              if(!x.j) return "bukan JSON, status "+x.st+": "+String(x.t).slice(0,140).replace(/\s+/g," ");
+              return okf(x.j);
+            }
+            return probe("a=l").then(function(x1){
+              L.push("  Uji daftar publik (a=l): "+ring(x1,function(j){return "OK, "+Object.keys(j.k||{}).length+" tanggal";}));
+              return probe("a=k&n="+sl+"&c="+encodeURIComponent(kode));
+            }).then(function(x2){
+              L.push("  Uji kode (a=k): "+ring(x2,function(j){return j.ok?"OK":"ditolak";}));
+              return probe("a=pl&n="+sl+"&c="+encodeURIComponent(kode));
+            }).then(function(x3){
+              L.push("  Uji daftar khusus (a=pl): "+ring(x3,function(j){if(!j.ok) return "ditolak"; var c=0; Object.keys(j.k||{}).forEach(function(k){c+=j.k[k].length;}); return "OK, "+c+" file";}));
               return L;
-            }).catch(function(){L.push("  Daftar gagal dimuat"); return L;});
+            });
           }).catch(function(){return ["Akun "+(i+1)+":","  tidak terhubung"];});
         })).then(function(rs){rs.forEach(function(L){out=out.concat(L,[""]);}); pre.textContent=out.join("\n");});
       });
