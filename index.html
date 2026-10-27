@@ -1853,10 +1853,20 @@ button.b.alt.emas.ikon[hidden]{display:none}
       if(!CC||priv[id]||b.size>1500000) return;
       CC.then(function(c){if(c) return c.put(ckey(id),new Response(b,{headers:{"Content-Type":m||b.type}}));}).catch(function(){});
     }
+    /* ambil satu file: file khusus santri lewat POST dengan PIN santri (fk); bila server belum versi baru
+       atau permintaan gagal, pakai cara lama (GET a=f). File publik tetap lewat GET seperti semula. */
+    function cgetF(id){
+      var s=priv[id];
+      if(!s) return cget("a=f&id="+id,id);
+      return cpost({a:"fk",i:id,n:s,c:PCODE[s]||""},ow[id]||0).then(function(j){
+        if(j&&j.d) return j;
+        return cget("a=f&id="+id+pq(id),id);
+      },function(){return cget("a=f&id="+id+pq(id),id);});
+    }
     function getUrl(id){
       return cacheGet(id).then(function(b){
         if(b) return URL.createObjectURL(b);
-        return cget("a=f&id="+id+pq(id),id).then(function(j){var b2=b2b(j);cachePut(id,b2,j.m);return URL.createObjectURL(b2);});
+        return cgetF(id).then(function(j){var b2=b2b(j);cachePut(id,b2,j.m);return URL.createObjectURL(b2);});
       });
     }
     function big(u,fn){
@@ -1938,7 +1948,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       var v=null; x.onclick=function(){if(v)v.pause();o.remove();};
       function go(src){o.firstChild.textContent="";v=document.createElement("video");v.controls=true;v.playsInline=true;v.autoplay=true;v.src=src;v.style.cssText="max-width:100%;max-height:100%";o.insertBefore(v,x);}
       if(cb["v"+vid]) go(cb["v"+vid]);
-      else cget("a=f&id="+vid+pq(vid),vid).then(function(j){cb["v"+vid]=b2u(j);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){o.firstChild.textContent="Gagal memuat video";});
+      else cgetF(vid).then(function(j){cb["v"+vid]=b2u(j);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){o.firstChild.textContent="Gagal memuat video";});
     }
     function bad(j){
       if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){}alert("PIN salah.");}
@@ -2094,8 +2104,16 @@ button.b.alt.emas.ikon[hidden]{display:none}
     function savedAk(){try{return JSON.parse(localStorage.getItem(AK)||"{}")||{};}catch(e){return {};}}
     function saveAk(sl,c){try{var a=savedAk(); if(c) a[sl]=c; else delete a[sl]; localStorage.setItem(AK,JSON.stringify(a));}catch(e){}}
     function pq(id){var s=priv[id]; return s?"&n="+s+"&c="+encodeURIComponent(PCODE[s]||""):"";}
-    function cek(sl,c){
+    function cekGet(sl,c){
       return fetch(CUS[0]+"?a=k&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){return !!(j&&j.ok);}).catch(function(){return null;});
+    }
+    /* periksa PIN santri: POST (ck) dulu; server lama / gagal terhubung -> cara lama (GET) */
+    function cek(sl,c){
+      return cpost({a:"ck",n:sl,c:c},0).then(function(j){
+        if(j&&j.ok===true) return true;
+        if(j&&j.e==="ditolak") return false;
+        return cekGet(sl,c);
+      },function(){return cekGet(sl,c);});
     }
     /* catat file khusus santri dan unduh pratinjaunya (dengan kode) ke cb */
     function regPriv(sl,c,bx){
@@ -2112,7 +2130,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
           run++;
           (function(gr){
             var grp=gr.ids;
-            fetch((CUS[gr.a]||CU)+"?a=b&ids="+grp.join(",")+"&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){
+            cpost({a:"bk",ids:grp,n:sl,c:c},gr.a).then(function(j){
+              if(j&&j.r) return j;
+              return fetch((CUS[gr.a]||CU)+"?a=b&ids="+grp.join(",")+"&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();});
+            }).catch(function(){
+              return fetch((CUS[gr.a]||CU)+"?a=b&ids="+grp.join(",")+"&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();});
+            }).then(function(j){
               ((j&&j.r)||[]).forEach(function(e){cb[e.i]=e.d?b2u(e):PH;});
             }).catch(function(){}).then(function(){grp.forEach(function(x){if(!cb[x]) cb[x]=PH;}); run--; soon(); next();});
           })(g[idx++]);
@@ -2123,7 +2146,11 @@ button.b.alt.emas.ikon[hidden]{display:none}
     function loadPriv(sl,c){
       /* unggahan khusus bisa tersebar di beberapa akun: tanya semuanya, akun yang gagal/tanpa kode dilewati */
       return Promise.all(CUS.map(function(u,i){
-        return fetch(u+"?a=pl&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){return {i:i,j:j};}).catch(function(){return null;});
+        function viaGet(){return fetch(u+"?a=pl&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();});}
+        return cpost({a:"plk",n:sl,c:c},i).then(function(j){
+          if(j&&(j.ok===true||j.e==="ditolak")) return j;
+          return viaGet();
+        },function(){return viaGet();}).then(function(j){return {i:i,j:j};}).catch(function(){return null;});
       })).then(function(rs){
         var bx={}, okAny=false;
         rs.forEach(function(r){
@@ -2381,6 +2408,11 @@ button.b.alt.emas.ikon[hidden]{display:none}
                 return r.text().then(function(t){var j=null; try{j=JSON.parse(t);}catch(e){} return {st:r.status,j:j,t:t};});
               }).catch(function(e){return {err:String((e&&e.message)||e)};});
             }
+            function probeP(o){
+              return fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){
+                return r.text().then(function(t){var j=null; try{j=JSON.parse(t);}catch(e){} return {st:r.status,j:j,t:t};});
+              }).catch(function(e){return {err:String((e&&e.message)||e)};});
+            }
             function ring(x,okf){
               if(x.err) return "GAGAL ("+x.err+")";
               if(!x.j) return "bukan JSON, status "+x.st+": "+String(x.t).slice(0,140).replace(/\s+/g," ");
@@ -2394,6 +2426,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
               return probe("a=pl&n="+sl+"&c="+encodeURIComponent(kode));
             }).then(function(x3){
               L.push("  Uji daftar khusus (a=pl): "+ring(x3,function(j){if(!j.ok) return "ditolak"; var c=0; Object.keys(j.k||{}).forEach(function(k){c+=j.k[k].length;}); return "OK, "+c+" file";}));
+              return probeP({a:"ck",n:sl,c:kode});
+            }).then(function(x4){
+              L.push("  Uji PIN lewat POST (ck): "+ring(x4,function(j){return j.ok?"OK":(j.e==="pin"?"Code.gs belum versi Code-8, deploy ulang":"ditolak");}));
+              return probeP({a:"plk",n:sl,c:kode});
+            }).then(function(x5){
+              L.push("  Uji daftar khusus lewat POST (plk): "+ring(x5,function(j){if(!j.ok) return (j.e==="pin"?"Code.gs belum versi Code-8, deploy ulang":"ditolak"); var c=0; Object.keys(j.k||{}).forEach(function(k){c+=j.k[k].length;}); return "OK, "+c+" file";}));
               return L;
             });
           }).catch(function(){return ["Akun "+(i+1)+":","  tidak terhubung"];});
