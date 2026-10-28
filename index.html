@@ -354,6 +354,18 @@ button.b.alt.emas.ikon[hidden]{display:none}
 #mback{min-height:44px;padding:8px 20px;font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:.01em;color:var(--emas);background:color-mix(in srgb,var(--surface) 55%,transparent);border:1px solid var(--emas-garis);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 #mback:active{background:color-mix(in srgb,var(--emas-garis) 22%,transparent)}
 #mback:focus-visible{outline:3px solid var(--emas-garis);outline-offset:2px}
+#mpsel{font:inherit;font-weight:800;font-size:1.05rem;font-family:"Fraunces",Georgia,serif;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:6px 10px;max-width:100%}
+.mpick .sgal{max-width:720px;margin:0 auto}
+.mpick .sgal .sg{grid-template-columns:repeat(3,1fr)}
+@media (min-width:560px){.mpick .sgal .sg{grid-template-columns:repeat(5,1fr)}}
+.mpick .st .ck{position:absolute;right:6px;top:6px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.88);border:2px solid var(--emas-garis);color:#3b2a20;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;pointer-events:none}
+.mpick .st.pil{outline:3px solid var(--accent);outline-offset:-3px}
+.mpick .st.pil .ck{background:var(--accent);border-color:var(--accent)}
+.mpick .st.sdh{opacity:.45;cursor:default}
+.mpick .sh button.b{padding:4px 12px;font-size:.8rem}
+.mpbar{position:sticky;bottom:0;display:flex;gap:8px;max-width:720px;margin:12px auto 0;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg)}
+.mpbar .b{flex:1}
+.mpbar .b:disabled{opacity:.45;cursor:default}
 .tabs button.b{white-space:nowrap;padding:10px 6px}
 .dv{display:flex;flex-direction:column;gap:16px;margin-top:8px}
 .dv .kd{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 12px 12px;box-shadow:0 6px 20px rgba(210,140,100,.16)}
@@ -457,8 +469,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <p class="addr" id="mdinfo"></p>
   <div class="bar">
     <button class="b alt" id="mback" type="button">Kembali ke daftar momen</button>
-    <button class="b alt utama" id="mupl" type="button" hidden>Unggah foto/video</button>
-    <button class="b alt utama" id="mlink" type="button" hidden>Tambah link video</button>
+    <button class="b alt utama" id="mupl" type="button" hidden>+ Tambah dari kalender</button>
     <button class="b alt" id="mren" type="button" hidden>Ubah nama</button>
     <button class="b alt" id="mdel" type="button" hidden>Hapus momen</button>
   </div>
@@ -504,6 +515,18 @@ button.b.alt.emas.ikon[hidden]{display:none}
       <li>Ketuk <b>Tambah</b>.</li>
     </ol>
     <div class="act"><button class="b" id="ioshx" type="button">Mengerti</button></div>
+  </div>
+</div>
+<div class="yv mpick" id="mpick" hidden role="dialog" aria-modal="true" aria-label="Pilih foto dari kalender">
+  <div class="top">
+    <button class="b alt sq" id="mpprev" type="button" aria-label="Bulan lebih lama">‹</button>
+    <div class="mid"><select id="mpsel" aria-label="Pilih bulan"></select><small id="mpinfo"></small></div>
+    <button class="b alt sq" id="mpnext" type="button" aria-label="Bulan lebih baru">›</button>
+  </div>
+  <div class="sgal" id="mpbody"></div>
+  <div class="mpbar">
+    <button class="b alt" id="mpbatal" type="button">Batal</button>
+    <button class="b" id="mpok" type="button" disabled>Tambah</button>
   </div>
 </div>
 <div class="yv" id="yv" hidden role="dialog" aria-modal="true" aria-label="Tampilan satu tahun">
@@ -651,7 +674,8 @@ function santri_() {
 }
 
 // Daftar momen: M_slug = nama momen (Script Properties akun pertama).
-// File momen diberi nama m_slug_tanggal_waktu_acak.ext, tidak masuk kalender/galeri, hanya tampil di tab Momen.
+// Isi momen = foto/video kalender yang dipilih pemilik: daftar id file per momen, tersimpan di
+// MI_slug_0, MI_slug_1, ... (satu properti dibatasi 9 KB). Berkas aslinya tidak dipindah atau diubah.
 function momen_() {
   const n = {};
   try {
@@ -659,6 +683,34 @@ function momen_() {
     Object.keys(ap).forEach(function (k) { if (k.indexOf('M_') === 0) n[k.slice(2)] = ap[k]; });
   } catch (e) {}
   return n;
+}
+
+function mi_() {
+  const o = {}, r = {};
+  try {
+    const ap = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(ap).forEach(function (k) {
+      const m = /^MI_([a-z0-9-]+)_(\d+)$/.exec(k);
+      if (m) (o[m[1]] = o[m[1]] || []).push({ n: +m[2], v: ap[k] });
+    });
+  } catch (e) {}
+  Object.keys(o).forEach(function (s) {
+    o[s].sort(function (a, b) { return a.n - b.n; });
+    r[s] = o[s].map(function (x) { return x.v; }).join(',').split(',').filter(Boolean);
+  });
+  return r;
+}
+function miSet_(sl, ids) {
+  const sp = PropertiesService.getScriptProperties(), ap = sp.getProperties(), re = new RegExp('^MI_' + sl + '_\\d+$');
+  Object.keys(ap).forEach(function (k) { if (re.test(k)) sp.deleteProperty(k); });
+  const out = {};
+  let cur = '', n = 0;
+  ids.forEach(function (id) {
+    if (cur && cur.length + id.length + 1 > 8000) { out['MI_' + sl + '_' + (n++)] = cur; cur = ''; }
+    cur += (cur ? ',' : '') + id;
+  });
+  if (cur) out['MI_' + sl + '_' + n] = cur;
+  if (Object.keys(out).length) sp.setProperties(out);
 }
 
 // ===== Akses profil santri =====
@@ -726,14 +778,13 @@ function doGet(e) {
     if (a === 'l') {
       const cached = cget_('L');
       if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
-      const rows = [], mrows = [], prof = {}, it = folder_().getFiles();
+      const rows = [], prof = {}, it = folder_().getFiles();
       while (it.hasNext()) {
         const f = it.next(), n = f.getName();
         if (/\.poster\.jpg$/.test(n)) continue;
         const pm = /^profil_([a-z0-9-]+)_(\d+)\.jpg$/.exec(n);
         if (pm) { if (!prof[pm[1]] || +pm[2] > prof[pm[1]].ts) prof[pm[1]] = { ts: +pm[2], i: f.getId() }; continue; }
-        const mm = /^m_([a-z0-9-]+)_(\d{4}-\d{2}-\d{2})_(\d+)_/.exec(n);
-        if (mm) { mrows.push({ s: mm[1], k: mm[2], ts: +mm[3], f: { i: f.getId(), t: tipe_(f, n), p: f.getDescription() || '', s: [] } }); continue; }
+
         const m = /^(\d{4}-\d{2}-\d{2})_(\d+)_/.exec(n);
         if (!m) continue;
         // p = id pratinjau kecil (poster video / thumbnail foto), kosong untuk foto lama
@@ -745,10 +796,7 @@ function doGet(e) {
       const p = {};
       Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
       const sg = santri_();
-      mrows.sort(function (x, y) { return x.ts - y.ts; });
-      const mf = {};
-      mrows.forEach(function (r) { const bx = mf[r.s] = mf[r.s] || {}; (bx[r.k] = bx[r.k] || []).push(r.f); });
-      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mf: mf });
+      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_() });
       cput_('L', js, 600);
       return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1024,13 +1072,13 @@ function doPost(e) {
     if (b.a === 'lnk') {
       // tambah video link: album umum (b.k tanggal, b.s tag) atau halaman santri (b.n slug)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
-      const sl = b.n ? String(b.n) : '', mo = b.mo ? String(b.mo) : '';
+      const sl = b.n ? String(b.n) : '';
       if (sl && !/^[a-z0-9-]+$/.test(sl)) return out_({ ok: false, e: 'santri tidak valid' });
-      if (mo && !/^[a-z0-9-]{1,60}$/.test(mo)) return out_({ ok: false, e: 'momen tidak valid' });
+
       const r = urai_(b.u, String(b.h || ''));
       if (r.e) return out_({ ok: false, e: r.e, tolak: true });
-      const tg = (sl || mo) ? [] : (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
-      const nama = (sl ? 'p_' + sl + '_' : (mo ? 'm_' + mo + '_' : '')) + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
+      const tg = sl ? [] : (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
+      const nama = (sl ? 'p_' + sl + '_' : '') + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
       const dir = folder_();
       let file = null, po = null;
       try {
@@ -1196,41 +1244,35 @@ function doPost(e) {
     }
 
     if (b.a === 'md') {
-      // hapus momen dari daftar. Foto/video di Drive tidak ikut dihapus.
+      // hapus momen dari daftar. Foto/video di Drive/kalender tidak ikut dihapus.
       const sl = String(b.n || '');
       if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
       PropertiesService.getScriptProperties().deleteProperty('M_' + sl);
+      miSet_(sl, []);
       bust_();
       return out_({ ok: true });
     }
 
-    if (b.a === 'mup') {
-      // unggahan ke halaman momen: tidak masuk kalender/galeri
-      if (!/^[a-z0-9-]{1,60}$/.test(String(b.n || ''))) return out_({ ok: false, e: 'momen tidak valid' });
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
-      if (!/^(image|video)\//.test(b.m)) return out_({ ok: false, e: 'jenis file tidak didukung' });
-      const vid = /^video\//.test(b.m);
-      const ext = vid ? b.m.split('/')[1].replace('quicktime', 'mov').replace(/[^a-z0-9]/gi, '') : ({'image/png':'png','image/webp':'webp','image/gif':'gif'}[b.m] || 'jpg');
-      const nama = 'm_' + b.n + '_' + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-      const dir = folder_();
-      let file = null, po = null;
-      try {
-        file = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.d), b.m, nama + '.' + ext));
-        let p = '';
-        if (b.p) {
-          po = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.p), 'image/jpeg', nama + '.poster.jpg'));
-          p = po.getId();
-          file.setDescription(p);
-        }
-        bust_();
-        return out_({ ok: true, akun: NAMA_AKUN, f: { i: file.getId(), t: vid ? 'v' : 'i', p: p, s: [] } });
-      } catch (err) {
-        if (file) { try { file.setTrashed(true); } catch (x) {} }
-        if (po) { try { po.setTrashed(true); } catch (x) {} }
-        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+    if (b.a === 'ma' || b.a === 'mr') {
+      // masukkan (ma) atau keluarkan (mr) foto/video kalender ke/dari momen. b.n = slug momen, b.i = daftar id file
+      const sl = String(b.n || '');
+      if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
+      const ids = (Array.isArray(b.i) ? b.i : []).map(String).filter(function (x) { return /^[A-Za-z0-9_-]{10,80}$/.test(x); }).slice(0, 500);
+      if (!ids.length) return out_({ ok: false, e: 'tidak ada file' });
+      const cur = mi_()[sl] || [];
+      let hasil;
+      if (b.a === 'ma') {
+        hasil = cur.slice();
+        ids.forEach(function (x) { if (hasil.indexOf(x) < 0) hasil.push(x); });
+      } else {
+        const buang = {};
+        ids.forEach(function (x) { buang[x] = 1; });
+        hasil = cur.filter(function (x) { return !buang[x]; });
       }
+      miSet_(sl, hasil);
+      bust_();
+      return out_({ ok: true, i: hasil });
     }
-
     if (b.a === 'cov') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
       const sp = PropertiesService.getScriptProperties();
@@ -1376,7 +1418,7 @@ function izinAkun() {
   ];
   /* Daftar akhir = daftar dasar + tambahan/ganti nama dari server (SN) - yang dihapus (SX). Slug tetap, jadi foto dan PIN tidak hilang saat ganti nama. */
   var SANTRI=[], SLUG={}, SN={}, SX=[];
-  var MOMEN={}, momenMap={};
+  var MOMEN={}, momenMap={}, MIDS={};
   function slugRaw(n){return n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
   function slugOf(n){return Object.prototype.hasOwnProperty.call(SLUG,n)?SLUG[n]:slugRaw(n);}
   function rebuildSantri(){
@@ -2493,7 +2535,7 @@ function izinAkun() {
     if(n>8) im.loading="lazy";
     function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
     im.addEventListener("load",fit); longPress(im,items,n-1,thumbs); w.appendChild(im); if(im.complete) fit();
-    if(delFn){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Hapus foto "+n);x.addEventListener("click",delFn);w.appendChild(x);}
+    if(delFn){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Keluarkan dari momen "+n);x.addEventListener("click",delFn);w.appendChild(x);}
     wrap.appendChild(w);
   }
   function renderMomenDetail(sl){
@@ -2506,7 +2548,7 @@ function izinAkun() {
     inf.textContent=total?(total-nv)+" foto"+(nv?" \u00b7 "+nv+" video":"")+" \u00b7 "+keys.length+" tanggal":"";
     if(!keys.length){
       box.innerHTML='<div class="kosong"><p></p></div>';
-      box.querySelector("p").textContent=(window.CLOUD_URL&&window.CLOUD_OWNER)?"Belum ada foto di momen ini. Tekan Unggah foto/video untuk mengisi.":"Belum ada foto di momen ini.";
+      box.querySelector("p").textContent=(window.CLOUD_URL&&window.CLOUD_OWNER)?"Belum ada foto di momen ini. Tekan + Tambah dari kalender untuk mengisi.":"Belum ada foto di momen ini.";
       return;
     }
     keys.forEach(function(k){
@@ -2928,7 +2970,7 @@ function izinAkun() {
     function refresh(){
       if(!lb.hidden) return;
       try{
-        santriMap=build(); momenMap=buildMomen();
+        santriMap=build(); momenMap=buildMomen(); if(PK2.open) pickRender();
         if(S.v==="santri"){if(S.s) renderSantriDetail(S.s); else renderSantri(); return;}
         if(S.v==="galeri"){renderGaleri(); return;}
         if(S.v==="momen"){if(S.s) renderMomenDetail(S.s); else renderMomenList(); return;}
@@ -3815,9 +3857,10 @@ function izinAkun() {
       var m={}, mvw=S.v==="momen";
       Object.keys(MOMEN).forEach(function(s){
         if(typeof MOMEN[s]!=="string"||!MOMEN[s]) return;
-        var bx=MV[s]||{}, e={tanggal:{},f:{},total:0,cover:null,last:""};
-        Object.keys(bx).sort().forEach(function(k){
-          var arr=bx[k]; if(!arr||!arr.length) return;
+        var set={}, e={tanggal:{},f:{},total:0,cover:null,last:""};
+        (MIDS[s]||[]).forEach(function(x){set[x]=1;});
+        Object.keys(cm).sort().forEach(function(k){
+          var arr=(cm[k]||[]).filter(function(f){return set[f.i];}); if(!arr.length) return;
           e.tanggal[k]=arr.map(function(f){return ((f.t==="v"||f.t==="l")&&!f.p)?phVid(f):pu(f,mvw&&S.s===s);});
           e.f[k]=arr; e.total+=arr.length; e.last=k;
         });
@@ -3830,7 +3873,7 @@ function izinAkun() {
     function momenUi(){
       var o=!!CU&&!!window.CLOUD_OWNER, det=S.v==="momen"&&!!S.s, el=function(x){return document.getElementById(x);};
       el("mbuat").hidden=!o||det;
-      ["mupl","mlink","mren","mdel"].forEach(function(x){el(x).hidden=!o;});
+      ["mupl","mren","mdel"].forEach(function(x){el(x).hidden=!o;});
     }
     function namaMomenOk(v,selfSl){
       var nm=String(v||"").replace(/\s+/g," ").trim();
@@ -3889,12 +3932,88 @@ function izinAkun() {
     function delMomen(sl,k,f){
       if(!f) return;
       if(/^tmp_/.test(f.i)){alert("Masih mengunggah, tunggu sebentar.");return;}
-      if(!confirm("Hapus dari Drive?")) return;
-      cpost({a:"del",pin:PIN,i:f.i},ow[f.i]||0).then(function(j){
-        if(!j||!j.ok) return bad(j);
-        var a=(MV[sl]||{})[k]||[], x=a.indexOf(f); if(x>=0) a.splice(x,1); if(!a.length&&MV[sl]) delete MV[sl][k];
-        refresh();
+      if(!confirm("Keluarkan dari momen ini? Fotonya tetap ada di kalender.")) return;
+      cpost({a:"mr",pin:PIN,n:sl,i:[f.i]},0).then(function(j){
+        if(!j||!j.ok){galatMomen(j);return;}
+        MIDS[sl]=j.i||[]; refresh();
       }).catch(function(){alert("Gagal terhubung.");});
+    }
+    /* ===== Pilih foto/video dari kalender untuk dimasukkan ke momen ===== */
+    var PK2={open:false,sl:"",ym:"",sel:{},had:{}}, mpEl=document.getElementById("mpick");
+    function pkBulan(){
+      var s={}; Object.keys(cm).forEach(function(k){if(cm[k]&&cm[k].length) s[k.slice(0,7)]=1;});
+      return Object.keys(s).sort().reverse();
+    }
+    function pickClose(){ if(!PK2.open) return; PK2.open=false; mpEl.hidden=true; }
+    function pickOpen(sl){
+      var bl=pkBulan(), had={};
+      if(!bl.length){toast("Belum ada foto di kalender.");return;}
+      (MIDS[sl]||[]).forEach(function(x){had[x]=1;});
+      PK2={open:true,sl:sl,ym:bl[0],sel:{},had:had};
+      mpEl.hidden=false; mpEl.scrollTop=0; ovPush(pickClose);
+      pickRender();
+    }
+    function pickCount(){
+      var c=Object.keys(PK2.sel).filter(function(x){return PK2.sel[x];}).length, b=document.getElementById("mpok");
+      b.disabled=!c; b.textContent=c?"Tambah ("+c+")":"Tambah";
+    }
+    function pickRender(){
+      if(!PK2.open) return;
+      var body=document.getElementById("mpbody"), sel=document.getElementById("mpsel"), bl=pkBulan(), ym=PK2.ym, sc=mpEl.scrollTop;
+      sel.innerHTML="";
+      bl.forEach(function(x){
+        var c=0, o=document.createElement("option");
+        Object.keys(cm).forEach(function(k){if(k.slice(0,7)===x) c+=cm[k].length;});
+        o.value=x; o.textContent=BULAN[+x.slice(5,7)-1]+" "+x.slice(0,4)+" ("+c+")"; if(x===ym) o.selected=true; sel.appendChild(o);
+      });
+      var ix=bl.indexOf(ym);
+      document.getElementById("mpprev").disabled=ix<0||ix>=bl.length-1;
+      document.getElementById("mpnext").disabled=ix<=0;
+      document.getElementById("mpinfo").textContent="Pilih foto/video untuk "+(MOMEN[PK2.sl]||"momen");
+      body.innerHTML="";
+      Object.keys(cm).filter(function(k){return k.slice(0,7)===ym&&cm[k].length;}).sort().forEach(function(k){
+        var a=k.split("-"), d=+a[2], files=cm[k], blk=document.createElement("section"), head=document.createElement("div"), left=document.createElement("div");
+        var lab=document.createElement("div"), all=document.createElement("button"), grid=document.createElement("div");
+        blk.className="sb"; head.className="sh"; left.className="sd"; lab.className="hr"; grid.className="sg";
+        lab.textContent=HARI[new Date(+a[0],+a[1]-1,d).getDay()]+", "+d+" "+BULAN[+a[1]-1]+" "+a[0];
+        var pil=files.filter(function(f){return !PK2.had[f.i]&&!/^tmp_/.test(f.i);});
+        all.type="button"; all.className="b alt"; all.textContent=pil.length&&pil.every(function(f){return PK2.sel[f.i];})?"Batal semua":"Pilih semua";
+        if(!pil.length) all.hidden=true;
+        all.addEventListener("click",function(){
+          var on=!pil.every(function(f){return PK2.sel[f.i];});
+          pil.forEach(function(f){PK2.sel[f.i]=on;}); pickRender();
+        });
+        left.appendChild(lab); head.appendChild(left); head.appendChild(all);
+        files.forEach(function(f,i){
+          var had=!!PK2.had[f.i], tmp=/^tmp_/.test(f.i), b=document.createElement("button"), im=document.createElement("img"), ck=document.createElement("span");
+          var vid=(f.t==="v"||f.t==="l"), u=(vid&&!f.p)?phVid(f):pu(f,true);
+          b.type="button"; b.className="st"+(had||tmp?" sdh":"")+(PK2.sel[f.i]?" pil":"");
+          b.setAttribute("aria-label",(vid?"Video ":"Foto ")+(i+1)+", "+d+" "+BULAN[+a[1]-1]+(had?" (sudah ada di momen)":""));
+          im.alt=""; im.draggable=false; im.src=u;
+          ck.className="ck"; ck.textContent=(had||PK2.sel[f.i])?"✓":"";
+          b.appendChild(im); b.appendChild(ck);
+          if(vid) b.insertAdjacentHTML("beforeend",'<i class="pb" aria-hidden="true">▶</i>');
+          if(!had&&!tmp) b.addEventListener("click",function(){
+            PK2.sel[f.i]=!PK2.sel[f.i];
+            b.classList.toggle("pil",!!PK2.sel[f.i]); ck.textContent=PK2.sel[f.i]?"✓":"";
+            pickCount();
+          });
+          grid.appendChild(b);
+        });
+        blk.appendChild(head); blk.appendChild(grid); body.appendChild(blk);
+      });
+      if(!body.firstChild) body.innerHTML='<div class="kosong" style="min-height:30vh;display:flex;align-items:center;justify-content:center;color:var(--muted)"><p>Tidak ada foto di bulan ini.</p></div>';
+      pickCount(); mpEl.scrollTop=sc;
+    }
+    function pickSimpan(btn){
+      var ids=Object.keys(PK2.sel).filter(function(x){return PK2.sel[x]&&!/^tmp_/.test(x);}), sl=PK2.sl;
+      if(!ids.length||!ensurePin()) return;
+      var t0=btn.textContent; btn.disabled=true; btn.textContent="Menyimpan…";
+      cpost({a:"ma",pin:PIN,n:sl,i:ids},0).then(function(j){
+        btn.disabled=false; btn.textContent=t0;
+        if(!j||!j.ok){galatMomen(j);return;}
+        MIDS[sl]=j.i||[]; ovBack(pickClose); refresh(); toast(ids.length+" ditambahkan ke momen"); segarCacheDaftar();
+      }).catch(function(){btn.disabled=false; btn.textContent=t0; alert("Gagal terhubung.");});
     }
     /* ===== Tab File developer (khusus pemilik): Code.gs dibagi 2 bagian, index.html ===== */
     var DEV={p1:"",p2:"",p3:"",all:"",html:null,loading:false};
@@ -4042,12 +4161,17 @@ function izinAkun() {
     document.getElementById("mdel").addEventListener("click",function(){if(S.v==="momen"&&S.s) hapusMomen(S.s);});
     document.getElementById("mupl").addEventListener("click",function(){
       var sl=S.s; if(S.v!=="momen"||!sl||!ensurePin()) return;
-      pickTanggal(function(files,date){upload(files,[],{mo:sl,k:date});});
+      pickOpen(sl);
     });
-    document.getElementById("mlink").addEventListener("click",function(){
-      var sl=S.s, btn=document.getElementById("mlink"); if(S.v!=="momen"||!sl||!ensurePin()) return;
-      dialogLink(true,function(raw,date){kirimLink(raw,date,[],null,btn,sl);});
+    document.getElementById("mpbatal").addEventListener("click",function(){ovBack(pickClose);});
+    document.getElementById("mpok").addEventListener("click",function(){pickSimpan(this);});
+    document.getElementById("mpprev").addEventListener("click",function(){
+      var bl=pkBulan(), ix=bl.indexOf(PK2.ym); if(ix>=0&&ix<bl.length-1){PK2.ym=bl[ix+1]; pickRender(); mpEl.scrollTop=0;}
     });
+    document.getElementById("mpnext").addEventListener("click",function(){
+      var bl=pkBulan(), ix=bl.indexOf(PK2.ym); if(ix>0){PK2.ym=bl[ix-1]; pickRender(); mpEl.scrollTop=0;}
+    });
+    document.getElementById("mpsel").addEventListener("change",function(){PK2.ym=this.value; pickRender(); mpEl.scrollTop=0;});
     /* diagnosa: periksa tiap akun (versi Code.gs, kode santri, file khusus di Drive, dan apakah daftar bisa dibaca) */
     sdiagB.addEventListener("click",function(){
       var sl=S.s; if(!sl||!ensurePin()) return;
@@ -4127,7 +4251,7 @@ function izinAkun() {
         Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
         if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
-        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; }
+        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; }
         Object.keys(j.mf||{}).forEach(function(sl){
           var bx=MV[sl]=MV[sl]||{};
           Object.keys(j.mf[sl]).forEach(function(d){var ar=bx[d]=bx[d]||[]; j.mf[sl][d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;ar.push(f);});});
