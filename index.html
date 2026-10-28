@@ -424,7 +424,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <div class="dv">
     <div class="kd">
       <h3>Code.gs</h3>
-      <p>Dibagi 2 bagian. Tempel Bagian 1, lalu Bagian 2 tepat di bawahnya, dalam satu berkas Code.gs. Ganti PIN dan NAMA_AKUN, lalu deploy ulang.</p>
+      <p>Dibagi 3 bagian. Tempel Bagian 1, 2, lalu 3 berurutan tanpa jeda, dalam satu berkas Code.gs. Ganti PIN dan NAMA_AKUN, lalu deploy ulang.</p>
       <div class="bar">
         <button class="b alt utama" id="dvcall" type="button">Salin semua</button>
         <button class="b alt" id="dvdlgs" type="button">Unduh Code.gs</button>
@@ -436,6 +436,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
       <div class="bag">
         <div class="bh"><b>Bagian 2</b><span id="dvn2"></span><button class="b" id="dvc2" type="button">Salin</button></div>
         <textarea id="dvp2" readonly spellcheck="false" aria-label="Code.gs bagian 2"></textarea>
+      </div>
+      <div class="bag">
+        <div class="bh"><b>Bagian 3</b><span id="dvn3"></span><button class="b" id="dvc3" type="button">Salin</button></div>
+        <textarea id="dvp3" readonly spellcheck="false" aria-label="Code.gs bagian 3"></textarea>
       </div>
     </div>
     <div class="kd">
@@ -3893,7 +3897,7 @@ function izinAkun() {
       }).catch(function(){alert("Gagal terhubung.");});
     }
     /* ===== Tab File developer (khusus pemilik): Code.gs dibagi 2 bagian, index.html ===== */
-    var DEV={p1:"",p2:"",all:"",html:null,loading:false};
+    var DEV={p1:"",p2:"",p3:"",all:"",html:null,loading:false};
     function gateDev(ok){
       if(PIN){ok();return;}
       var p=prompt("Masukkan PIN pemilik"); if(!p) return;
@@ -3920,12 +3924,16 @@ function izinAkun() {
     function renderDev(){
       var el=document.getElementById("kodegs"); if(!el) return;
       if(!DEV.all){
-        var full=el.textContent, mk="// ===== VIDEO LINK =====", i=full.indexOf(mk);
-        if(i<0) i=Math.floor(full.length/2);
-        DEV.all=full; DEV.p1=full.slice(0,i).replace(/\s+$/,"")+"\n"; DEV.p2=full.slice(i);
-        document.getElementById("dvp1").value=DEV.p1; document.getElementById("dvp2").value=DEV.p2;
-        document.getElementById("dvn1").textContent=DEV.p1.split("\n").length+" baris";
-        document.getElementById("dvn2").textContent=DEV.p2.split("\n").length+" baris";
+        var full=el.textContent, i1=full.indexOf("// ===== VIDEO LINK ====="), i2=full.indexOf("function doPost(e) {");
+        if(i1<0||i2<=i1){i1=Math.floor(full.length/3); i2=Math.floor(full.length*2/3);}
+        DEV.all=full;
+        DEV.p1=full.slice(0,i1).replace(/\s+$/,"")+"\n";
+        DEV.p2=full.slice(i1,i2).replace(/\s+$/,"")+"\n";
+        DEV.p3=full.slice(i2);
+        [1,2,3].forEach(function(q){
+          document.getElementById("dvp"+q).value=DEV["p"+q];
+          document.getElementById("dvn"+q).textContent=DEV["p"+q].split("\n").length+" baris";
+        });
       }
       var inf=document.getElementById("dvhinfo");
       if(DEV.html){inf.textContent="Siap disalin atau diunduh ("+kb(DEV.html)+")."; return;}
@@ -3988,6 +3996,7 @@ function izinAkun() {
       }
       bind("dvc1",function(){renderDev(); salinTeks(DEV.p1,hasil);});
       bind("dvc2",function(){renderDev(); salinTeks(DEV.p2,hasil);});
+      bind("dvc3",function(){renderDev(); salinTeks(DEV.p3,hasil);});
       bind("dvcall",function(){renderDev(); salinTeks(DEV.all,hasil);});
       bind("dvdlgs",function(){
         renderDev();
