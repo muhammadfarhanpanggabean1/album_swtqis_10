@@ -2084,6 +2084,19 @@ button.b.alt.emas.ikon[hidden]{display:none}
         },cleanup);
       }
     }
+    /* layar penuh video link: kunci landscape bila didukung HP; dilepas saat keluar */
+    (function(){
+      function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement;}
+      function gantiFs(){
+        try{
+          var so=screen.orientation; if(!so) return;
+          if(fsEl()){ if(so.lock) so.lock("landscape").catch(function(){}); }
+          else if(so.unlock){ so.unlock(); }
+        }catch(e){}
+      }
+      document.addEventListener("fullscreenchange",gantiFs);
+      document.addEventListener("webkitfullscreenchange",gantiFs);
+    })();
     function ytKontrol(box,fr,gagal,cleanup){
       var st={t:0,d:0,s:-1,m:false}, ok=false, dead=false, drag=false;
       var HOLE="polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,36% 32%,36% 68%,64% 68%,64% 32%,36% 32%)";
@@ -2095,9 +2108,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
       bar.style.cssText="position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font:600 .85rem system-ui,sans-serif";
       function mk(t,lab){var b=document.createElement("button");b.type="button";b.textContent=t;b.setAttribute("aria-label",lab);b.style.cssText="all:unset;cursor:pointer;min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#fff";return b;}
       var bp=mk("▶","Putar/jeda"), tm=document.createElement("span"), rg=document.createElement("input"), td=document.createElement("span"), bm=mk("🔊","Suara"), bf=mk("⛶","Layar penuh");
+      /* percobaan: pilih kualitas YouTube (YouTube boleh mengabaikan; label menunjukkan kualitas yang benar-benar dipakai) */
+      var QL=["hd1080","hd720","large","medium","small"], LBL={hd2160:"2160p",hd1440:"1440p",hd1080:"1080p",hd720:"720p",large:"480p",medium:"360p",small:"240p",tiny:"144p",highres:"4K"}, want="auto", qNow="", qAv=null;
+      var bq=mk("Auto","Kualitas video"); bq.style.minWidth="46px"; bq.style.fontSize=".78rem";
       tm.textContent="0:00"; td.textContent="0:00"; tm.style.minWidth=td.style.minWidth="38px";
       rg.type="range"; rg.min=0; rg.max=1000; rg.value=0; rg.style.cssText="flex:1;min-width:0;accent-color:#fff"; rg.setAttribute("aria-label","Posisi video");
-      bar.appendChild(bp); bar.appendChild(tm); bar.appendChild(rg); bar.appendChild(td); bar.appendChild(bm);
+      bar.appendChild(bp); bar.appendChild(tm); bar.appendChild(rg); bar.appendChild(td); bar.appendChild(bm); bar.appendChild(bq);
       if(box.requestFullscreen||box.webkitRequestFullscreen) bar.appendChild(bf);
       function fmt(t){t=Math.max(0,Math.floor(t||0));var m=Math.floor(t/60),s=t%60;return m+":"+(s<10?"0":"")+s;}
       function upd(){
@@ -2106,6 +2122,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         bm.textContent=st.m?"🔇":"🔊";
         /* sebelum video pernah mulai: lubang kecil di tombol putar bawaan YouTube agar ketukan pertama asli (bukan skrip) */
         cover.style.clipPath=cover.style.webkitClipPath=(st.s===-1||st.s===5)?HOLE:"none";
+        bq.textContent=(want==="auto")?"Auto":(LBL[qNow]||LBL[want]||"Auto");
       }
       function toggle(){cmd((st.s===1||st.s===3)?"pauseVideo":"playVideo");}
       cover.addEventListener("click",toggle); bp.addEventListener("click",toggle);
@@ -2117,6 +2134,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
       });
       rg.addEventListener("input",function(){drag=true; if(st.d>0){st.t=rg.value/1000*st.d; tm.textContent=fmt(st.t);}});
       rg.addEventListener("change",function(){drag=false; if(st.d>0) cmd("seekTo",[rg.value/1000*st.d,true]);});
+      bq.addEventListener("click",function(){
+        var ls=["auto"].concat(QL.filter(function(q){return !qAv||qAv.indexOf(q)>=0;}));
+        want=ls[(ls.indexOf(want)+1)%ls.length];
+        cmd("setPlaybackQuality",[want==="auto"?"default":want]); upd();
+        setTimeout(upd,1500);
+      });
       box.appendChild(cover); box.appendChild(bar); upd();
       function onmsg(e){
         if(e.source!==fr.contentWindow) return;
@@ -2129,6 +2152,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
           if(typeof i.duration==="number"&&i.duration>0) st.d=i.duration;
           if(typeof i.playerState==="number") st.s=i.playerState;
           if(typeof i.muted==="boolean") st.m=i.muted;
+          if(typeof i.playbackQuality==="string") qNow=i.playbackQuality;
+          if(Array.isArray(i.availableQualityLevels)&&i.availableQualityLevels.length) qAv=i.availableQualityLevels;
           upd();
         }
       }
