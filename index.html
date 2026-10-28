@@ -161,6 +161,9 @@ button.b{border:0;border-radius:999px;padding:10px 16px;font:inherit;font-weight
 button.b:not(.alt){box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 10px color-mix(in srgb,var(--accent) 45%,transparent)}
 button.b.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 20%,transparent)}
 button.b.alt.emas{box-shadow:none}
+/* tombol aksi utama: pil kaca ringan (tanpa blur) senada dengan indikator tab */
+button.b.alt.utama{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 92%,#fff),color-mix(in srgb,var(--accent) 72%,transparent));color:#3b2a20;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.2),0 4px 12px color-mix(in srgb,var(--accent) 50%,transparent)}
+button.b.alt.utama:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 1px 5px color-mix(in srgb,var(--accent) 40%,transparent)}
 button.b:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 html[data-uk="1"]{--cw:100px;--kol:5;--kolw:6}
 html[data-uk="3"]{--cw:9999px;--kol:2;--kolw:3}
@@ -209,12 +212,15 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
 main,.panel{padding-bottom:96px}
 /* ===== Tab kaca: kapsul melengkung yang melayang, dengan pantulan cahaya di tepinya ===== */
 .tabs{--k-bg:linear-gradient(150deg,rgba(255,255,255,.66),rgba(255,255,255,.26));--k-garis:rgba(255,255,255,.7);--k-atas:rgba(255,255,255,.9);--k-bayang:0 12px 32px rgba(120,80,50,.24),0 2px 6px rgba(120,80,50,.12);
-  position:fixed;left:14px;right:14px;max-width:420px;margin:0 auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;justify-content:center;gap:4px;padding:6px;border-radius:32px;
+  position:fixed;left:14px;right:14px;max-width:420px;margin:0 auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;padding:0;overflow:hidden;border-radius:32px;
   background:var(--k-bg);border:1px solid var(--k-garis);box-shadow:inset 0 1px 0 var(--k-atas),inset 0 -1px 0 rgba(255,255,255,.18),var(--k-bayang);
   -webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%)}
 @media (prefers-color-scheme:dark){.tabs{--k-bg:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05));--k-garis:rgba(255,255,255,.2);--k-atas:rgba(255,255,255,.28);--k-bayang:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3)}}
 .tabs[hidden]{display:none}
-.tabs button.b{flex:1;max-width:260px;min-height:46px;padding:10px 12px;border-radius:26px;background:transparent;color:var(--ink);box-shadow:none;-webkit-tap-highlight-color:transparent;
+.tabs .tgulir{position:relative;flex:1;min-width:0;display:flex;gap:4px;padding:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x}
+.tabs .tgulir::-webkit-scrollbar{display:none}
+.tabs .tgulir{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%)}
+.tabs button.b{flex:0 0 calc((100% - 8px)/3);min-width:0;min-height:46px;padding:10px 12px;border-radius:26px;background:transparent;color:var(--ink);box-shadow:none;-webkit-tap-highlight-color:transparent;
   transition:transform .4s cubic-bezier(.34,1.56,.64,1),background .25s ease,box-shadow .25s ease,color .25s ease}
 .tabs button.b{position:relative;z-index:1}
 .tabs button.b[aria-selected="true"]{color:#3b2a20}
@@ -277,7 +283,9 @@ button.b.ins svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--today);
 @media (prefers-reduced-motion:reduce){.sant .kartu.angkat{transform:none;transition:none}}
 /* tablet dan desktop: tab pindah ke pojok kanan atas */
 @media (min-width:768px){
-  html.lebar .tabs{left:auto;max-width:none;margin:0;right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));bottom:auto;gap:4px;padding:5px;border-radius:999px}
+  html.lebar .tabs{left:auto;max-width:none;margin:0;right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));bottom:auto;padding:0;border-radius:999px}
+  html.lebar .tabs .tgulir{padding:5px;-webkit-mask-image:none;mask-image:none}
+  html.lebar .tabs .salin{display:none}
   html.lebar .tabs .geser{top:5px;bottom:5px;border-radius:999px}
   html.lebar .tabs button.b{flex:none;max-width:none;min-height:0;padding:8px 20px;font-size:.9rem;border-radius:999px}
   html.lebar main,html.lebar .panel{padding-top:80px;padding-bottom:40px}
@@ -377,14 +385,14 @@ button.b.alt.emas.ikon[hidden]{display:none}
     <button class="b alt" id="close">Kembali ke kalender</button>
     <button class="b alt emas ikon" id="tokal" type="button" aria-label="Ke kalender" title="Ke kalender" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
   </div>
-  <div class="bar"><button class="b alt" id="tambah" type="button" hidden>+ Tambah foto / video</button>
-    <button class="b alt" id="tlink" type="button" hidden>+ Tambah link video</button></div>
+  <div class="bar"><button class="b alt utama" id="tambah" type="button" hidden>+ Tambah foto / video</button>
+    <button class="b alt utama" id="tlink" type="button" hidden>+ Tambah link video</button></div>
   <div class="photos" id="photos"></div>
 </section>
 <section id="santri" class="panel sant" hidden>
   <h2>Daftar Santri</h2>
   <p class="addr" id="sjml"></p>
-  <div class="bar"><button class="b alt" id="stambah" type="button" hidden>+ Tambah santri</button>
+  <div class="bar"><button class="b alt utama" id="stambah" type="button" hidden>+ Tambah santri</button>
     <button class="b alt" id="skode" type="button" hidden>Kelola PIN santri</button></div>
   <div class="list" id="slist"></div>
 </section>
@@ -393,13 +401,17 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <p class="addr" id="gjml"></p>
   <div class="sgal" id="ggal"></div>
 </section>
+<section id="momen" class="panel sant" hidden>
+  <h2>Momen</h2>
+  <p class="addr">Segera hadir.</p>
+</section>
 <section id="sdetail" class="panel sant" hidden>
   <h2 id="sdnama"></h2>
   <div class="bar">
     <button class="b alt" id="sback">Kembali ke daftar santri</button>
-    <button class="b alt" id="sprof" type="button" hidden>Ganti foto profil</button>
-    <button class="b alt" id="supl" type="button" hidden>Unggah foto/video</button>
-    <button class="b alt" id="slink" type="button" hidden>Tambah link video</button>
+    <button class="b alt utama" id="sprof" type="button" hidden>Ganti foto profil</button>
+    <button class="b alt utama" id="supl" type="button" hidden>Unggah foto/video</button>
+    <button class="b alt utama" id="slink" type="button" hidden>Tambah link video</button>
     <button class="b alt" id="sdiag" type="button" hidden>Cek unggahan khusus</button>
     <button class="b alt" id="sren" type="button" hidden>Ubah nama</button>
     <button class="b alt" id="sdel" type="button" hidden>Hapus santri</button>
@@ -407,12 +419,13 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <div class="addr" id="sdinfo"></div>
   <div class="sgal" id="sgal"></div>
 </section>
-<nav class="tabs" id="tabs" role="tablist" aria-label="Menu utama">
+<nav class="tabs" id="tabs" role="tablist" aria-label="Menu utama"><div class="tgulir" id="tgulir">
   <span class="geser" aria-hidden="true"></span>
   <button class="b" id="tabalbum" role="tab" aria-selected="true">Album</button>
   <button class="b" id="tabsantri" role="tab" aria-selected="false">Santri</button>
   <button class="b" id="tabgaleri" role="tab" aria-selected="false">Galeri</button>
-</nav>
+  <button class="b" id="tabmomen" role="tab" aria-selected="false">Momen</button>
+</div></nav>
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Pratinjau foto">
   <img id="lbimg" alt="">
   <button class="b" id="lbplay" type="button" hidden aria-label="Putar video">▶</button>
@@ -1148,7 +1161,7 @@ function izinAkun() {
     if(OV.length&&OV[OV.length-1]===c){ if(OVBUSY) return; OVBUSY=true; OVPEND=fn; history.back(); }
     else{ c(); fn(); }
   }
-  function rootRef(){return S.v==="santri"?"santri":(S.v==="galeri"?"galeri":S.y+"/"+S.m);}
+  function rootRef(){return S.v==="santri"?"santri":(S.v==="galeri"?"galeri":(S.v==="momen"?"momen":S.y+"/"+S.m));}
   function toast(t){
     if(!toastEl){toastEl=document.createElement("div");toastEl.className="toast";toastEl.setAttribute("role","status");document.body.appendChild(toastEl);}
     toastEl.textContent=t; void toastEl.offsetWidth; toastEl.classList.add("on");
@@ -1161,7 +1174,7 @@ function izinAkun() {
   }
   function atBase(){
     var v=S.v;
-    if(v==="santri"||v==="galeri"){
+    if(v==="santri"||v==="galeri"||v==="momen"){
       S={y:S.y,m:S.m,d:null};
       try{history.replaceState({g:0},"",urlFor(rootRef()));history.pushState({g:1},"",urlFor(rootRef()));}catch(e){}
       show(); return;
@@ -1255,6 +1268,7 @@ function izinAkun() {
   function parse(){
     var h=pathMode?rest():location.hash.replace(/^#\/?/,"");
     if(/^galeri\/?$/.test(h)) return {y:S.y,m:S.m,d:null,v:"galeri"};
+    if(/^momen\/?$/.test(h)) return {y:S.y,m:S.m,d:null,v:"momen"};
     var sm=/^santri(?:\/([^\/?#]*))?\/?$/.exec(h);
     if(sm){var sl=sm[1]?decodeURIComponent(sm[1]):null;return {y:S.y,m:S.m,d:null,v:"santri",s:(sl&&santriBySlug(sl))?sl:null};}
     var p=h.split(/[\/\-]/).filter(Boolean).map(Number);
@@ -2123,8 +2137,8 @@ function izinAkun() {
   }
   /* ===== Tab Santri ===== */
   var santriEl=document.getElementById("santri"), sdetEl=document.getElementById("sdetail"), tabsEl=document.getElementById("tabs");
-  var tabAlbum=document.getElementById("tabalbum"), tabSantri=document.getElementById("tabsantri"), tabGaleri=document.getElementById("tabgaleri");
-  var galeriEl=document.getElementById("galeri");
+  var tabAlbum=document.getElementById("tabalbum"), tabSantri=document.getElementById("tabsantri"), tabGaleri=document.getElementById("tabgaleri"), tabMomen=document.getElementById("tabmomen");
+  var galeriEl=document.getElementById("galeri"), momenEl=document.getElementById("momen");
   function initials(n){
     var w=n.split(/\s+/).filter(Boolean);
     return ((w[0]||"").charAt(0)+(w.length>1?w[w.length-1].charAt(0):"")).toUpperCase();
@@ -2309,6 +2323,11 @@ function izinAkun() {
       rep("galeri");
       S={y:S.y,m:S.m,d:null,v:"galeri"}; show(); return;
     }
+    if(t==="momen"){
+      if(S.v==="momen") return;
+      rep("momen");
+      S={y:S.y,m:S.m,d:null,v:"momen"}; show(); return;
+    }
     if(t==="santri"){
       if(sv) return;
       rep("santri");
@@ -2322,6 +2341,7 @@ function izinAkun() {
   tabAlbum.addEventListener("click",function(){goTab("album");});
   tabSantri.addEventListener("click",function(){goTab("santri");});
   tabGaleri.addEventListener("click",function(){goTab("galeri");});
+  tabMomen.addEventListener("click",function(){goTab("momen");});
   document.getElementById("sback").addEventListener("click",function(){
     if(history.state&&history.state.sn){history.back();return;}
     try{history.replaceState(null,"",urlFor("santri"));}catch(e){}
@@ -2426,17 +2446,19 @@ function izinAkun() {
     renderMonth();
     renderMem();
     warm();
-    var on=!!S.d, sv=S.v==="santri", gv=S.v==="galeri", sl=sv&&!S.s, sd=sv&&!!S.s;
+    var on=!!S.d, sv=S.v==="santri", gv=S.v==="galeri", mv=S.v==="momen", sl=sv&&!S.s, sd=sv&&!!S.s;
     if(panel.hidden) panel.style.animation=""; /* hapus penahan animasi sebelum panel ditampilkan lagi */
-    home.hidden=on||sv||gv; panel.hidden=!on;
-    santriEl.hidden=!sl; sdetEl.hidden=!sd; galeriEl.hidden=!gv;
+    home.hidden=on||sv||gv||mv; panel.hidden=!on;
+    santriEl.hidden=!sl; sdetEl.hidden=!sd; galeriEl.hidden=!gv; momenEl.hidden=!mv;
     tabsEl.hidden=!(sl||(!on&&!sv));
-    tabAlbum.setAttribute("aria-selected",(sv||gv)?"false":"true");
+    tabAlbum.setAttribute("aria-selected",(sv||gv||mv)?"false":"true");
     tabSantri.setAttribute("aria-selected",sv?"true":"false");
     tabGaleri.setAttribute("aria-selected",gv?"true":"false");
+    tabMomen.setAttribute("aria-selected",mv?"true":"false");
     if(window.CLOUD) CLOUD.santri();
     if(sl) renderSantri();
     if(gv){document.title="Album SWTQIS-10 · Galeri";renderGaleri();}
+    if(mv){document.title="Album SWTQIS-10 · Momen";}
     if(sd){
       var nm=santriBySlug(S.s);
       document.getElementById("sdnama").textContent=nm;
@@ -3817,20 +3839,79 @@ document.addEventListener("keydown",function(e){
 /* ===== Tab kaca: indikator bergeser, getar halus saat menekan, putaran di tombol instal ===== */
 (function(){
   var t=document.getElementById("tabs"); if(!t) return;
-  var g=t.querySelector(".geser"), siap=false;
+  var sc=t.querySelector(".tgulir"), g=t.querySelector(".geser"), siap=false, mulai=false, cur=null;
   var kurang=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
-  function pos(){
-    var b=t.querySelector('button[aria-selected="true"]');
-    if(!g||!b||t.hidden||!b.offsetWidth) return;
+  /* loop tanpa batas: 5 set tab berderet (set ke-3 = tombol asli, sisanya salinan tampilan) */
+  var asli=[].slice.call(sc.querySelectorAll("button.b")), N=asli.length, SET=5;
+  function salin(){var f=document.createDocumentFragment();asli.forEach(function(b){var c=b.cloneNode(true);c.removeAttribute("id");c.classList.add("salin");c.tabIndex=-1;c.setAttribute("aria-hidden","true");c.__asli=b;f.appendChild(c);});return f;}
+  sc.insertBefore(salin(),asli[0]);sc.insertBefore(salin(),asli[0]);sc.appendChild(salin());sc.appendChild(salin());
+  var semua=[].slice.call(sc.querySelectorAll("button.b"));
+  /* semua salinan memakai satu fungsi klik: milik tombol asli */
+  sc.addEventListener("click",function(e){var c=e.target.closest&&e.target.closest(".salin");if(c)c.__asli.click();});
+  function aktif(){return asli[0].offsetWidth>0&&semua[0].offsetWidth>0;}
+  function P(){return semua[N].offsetLeft-semua[0].offsetLeft;}
+  function idxAktif(){for(var i=0;i<N;i++) if(asli[i].getAttribute("aria-selected")==="true") return i;return -1;}
+  function sinkron(){asli.forEach(function(b,i){var v=b.getAttribute("aria-selected");for(var k=0;k<SET;k++){if(k===2)continue;var c=semua[k*N+i];if(c.getAttribute("aria-selected")!==v)c.setAttribute("aria-selected",v);}});}
+  function pilih(i){
+    var cx=sc.scrollLeft+sc.clientWidth/2,best=asli[i],bd=1e9;
+    if(!aktif()) return best;
+    for(var k=0;k<SET;k++){var b=semua[k*N+i],d=Math.abs(b.offsetLeft+b.offsetWidth/2-cx);if(d<bd){bd=d;best=b;}}
+    return best;
+  }
+  function letak(b,instan){
+    if(!b) return; cur=b;
+    if(instan) g.style.transition="none";
     g.style.width=b.offsetWidth+"px";
     g.style.transform="translateX("+b.offsetLeft+"px)";
+    if(instan){void g.offsetWidth;g.style.transition="";}
+  }
+  function pos(){
+    var i=idxAktif();
+    if(i<0||t.hidden||!asli[0].offsetWidth) return;
+    if(!mulai&&aktif()){sc.scrollLeft=semua[2*N].offsetLeft-semua[0].offsetLeft;mulai=true;}
+    var b=pilih(i); letak(b,false);
+    var l=b.offsetLeft, r=l+b.offsetWidth;
+    if(l<sc.scrollLeft+4||r>sc.scrollLeft+sc.clientWidth-4) sc.scrollTo({left:Math.max(0,l-(sc.clientWidth-b.offsetWidth)/2),behavior:(kurang||!siap)?"auto":"smooth"});
     if(!siap){siap=true;requestAnimationFrame(function(){requestAnimationFrame(function(){g.classList.add("siap");});});}
   }
-  try{new MutationObserver(pos).observe(t,{attributes:true,subtree:true,attributeFilter:["aria-selected","hidden"]});}catch(e){}
-  window.addEventListener("resize",pos);
-  window.addEventListener("load",pos);
-  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(pos);
-  pos();
+  var dr=null, geser=false, tahan=false, rq=0;
+  /* dekat ujung: lompat diam-diam ke salinan yang sama (selisih kelipatan satu set) */
+  sc.addEventListener("scroll",function(){
+    if(rq) return;
+    rq=requestAnimationFrame(function(){
+      rq=0; if(!aktif()) return;
+      var p=P(), x=sc.scrollLeft, d=x<p?2*p:(x>3*p?-2*p:0), i=idxAktif();
+      if(d){
+        sc.scrollLeft=x+d; if(dr) dr.s+=d;
+        var n=cur?semua.indexOf(cur)+(d>0?2*N:-2*N):-1;
+        letak(n>=0&&n<semua.length?semua[n]:pilih(i),true);
+      }else if(cur&&i>=0){
+        var l=cur.offsetLeft, r=l+cur.offsetWidth;
+        if(r<x||l>x+sc.clientWidth) letak(pilih(i),true);
+      }
+    });
+  },{passive:true});
+  /* desktop: tarik dengan mouse dan roda */
+  sc.addEventListener("pointerdown",function(e){if(e.pointerType!=="mouse"||e.button!==0||!aktif()) return;dr={x:e.clientX,s:sc.scrollLeft};geser=false;});
+  window.addEventListener("pointermove",function(e){
+    if(!dr) return; var d=e.clientX-dr.x;
+    if(!geser&&Math.abs(d)>4){geser=true;sc.style.cursor="grabbing";}
+    if(geser) sc.scrollLeft=dr.s-d;
+  });
+  function lepas(){if(dr&&geser){tahan=true;setTimeout(function(){tahan=false;},60);}dr=null;geser=false;sc.style.cursor="";}
+  window.addEventListener("pointerup",lepas);window.addEventListener("pointercancel",lepas);
+  sc.addEventListener("click",function(e){if(tahan){e.stopPropagation();e.preventDefault();}},true);
+  sc.addEventListener("wheel",function(e){
+    if(!aktif()) return;
+    var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+    if(!d) return; e.preventDefault(); sc.scrollLeft+=d;
+  },{passive:false});
+  function ulang(){mulai=false;pos();}
+  try{new MutationObserver(function(){sinkron();pos();}).observe(t,{attributes:true,subtree:true,attributeFilter:["aria-selected","hidden"]});}catch(e){}
+  window.addEventListener("resize",ulang);
+  window.addEventListener("load",ulang);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(ulang);
+  sinkron(); pos();
   /* getar singkat (Android) */
   document.addEventListener("pointerdown",function(e){
     if(kurang||!navigator.vibrate||!e.target.closest) return;
