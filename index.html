@@ -334,6 +334,12 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .sant .stat .si+.si{border-left:1px solid color-mix(in srgb,var(--emas-garis) 55%,transparent)}
 .sant .stat b{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.5rem;line-height:1;color:var(--ink)}
 .sant .stat span{font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emas)}
+.own{margin:30px 0 0;text-align:center}
+.own[hidden]{display:none}
+.own small{display:block;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.own .bar{justify-content:center;margin:10px 0 0}
+.own button.b.alt.emas{display:inline-flex;align-items:center;gap:8px;padding:8px 18px}
+.own button.b.alt.emas:disabled{opacity:.55;cursor:default}
 </style>
 </head>
 <body>
@@ -356,6 +362,13 @@ button.b.alt.emas.ikon[hidden]{display:none}
     <div class="row" id="memrow"></div>
   </section>
   <p class="hint" id="note"></p>
+  <section class="own" id="own" hidden aria-label="Berkas aplikasi">
+    <small>Berkas aplikasi</small>
+    <div class="bar">
+      <button class="b alt emas" id="dlhtml" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg><span>index.html</span></button>
+      <button class="b alt emas" id="dlgs" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg><span>Code.gs</span></button>
+    </div>
+  </section>
 </main>
 <section id="panel" class="panel" hidden>
   <h2 id="dt"></h2>
@@ -441,6 +454,610 @@ button.b.alt.emas.ikon[hidden]{display:none}
     </div>
   </div>
 </div>
+<script type="text/plain" id="kodegs">/* Penghubung Album SWTQIS-10 <-> Google Drive.
+   Folder Drive tetap pribadi. Pengunjung hanya bisa melihat lewat album;
+   menambah/menghapus butuh PIN pemilik.
+   Halaman santri dibuka dengan PIN santri masing-masing (tersimpan sebagai K_slug di Script Properties).
+
+   Versi 5: lebih cepat (CacheService untuk daftar dan pratinjau, pengecekan folder satu kali,
+   unduh foto/video besar per potongan secara paralel) dan mendukung VIDEO LINK tersembunyi
+   (YouTube, Vimeo, Google Drive, TikTok, Instagram, Facebook, dsb). Alamat link disimpan di sini,
+   tidak pernah ditampilkan atau dikirim lewat daftar; hanya diberikan ke pemutar di dalam app. */
+
+const PIN = 'GANTI-PIN-INI';            // <-- ganti dengan PIN pemilik (sama untuk semua akun)
+const NAMA_FOLDER = 'Album SWTQIS-10 (Drive)';
+const NAMA_AKUN = 'C';                  // <-- GANTI HURUF INI untuk tiap akun baru: C, D, E ... (A dan B sudah dipakai)
+const POTONG = 3 * 1024 * 1024;         // ukuran satu potongan unduhan (byte)
+
+let _F = null;
+function folder_() {
+  if (_F) return _F;
+  const p = PropertiesService.getScriptProperties();
+  const id = p.getProperty('F');
+  if (id) { try { _F = DriveApp.getFolderById(id); return _F; } catch (e) {} }
+  const f = DriveApp.createFolder(NAMA_FOLDER);
+  p.setProperty('F', f.getId());
+  _F = f;
+  return f;
+}
+
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ===== Cache server (CacheService): nilai besar dipecah per 90.000 karakter =====
+function cput_(k, s, ttl) {
+  try {
+    const c = CacheService.getScriptCache(), n = Math.ceil(s.length / 90000) || 1, o = {};
+    for (let i = 0; i < n; i++) o[k + '_' + i] = s.substr(i * 90000, 90000);
+    o[k] = String(n);
+    c.putAll(o, ttl || 600);
+  } catch (e) {}
+}
+function cget_(k) {
+  try {
+    const c = CacheService.getScriptCache(), n = +c.get(k);
+    if (!n) return null;
+    const ks = [];
+    for (let i = 0; i < n; i++) ks.push(k + '_' + i);
+    const g = c.getAll(ks);
+    let s = '';
+    for (let i = 0; i < n; i++) { if (g[ks[i]] == null) return null; s += g[ks[i]]; }
+    return s;
+  } catch (e) { return null; }
+}
+function cdel_(k) {
+  try {
+    const c = CacheService.getScriptCache(), n = +c.get(k) || 0, ks = [k];
+    for (let i = 0; i < n; i++) ks.push(k + '_' + i);
+    c.removeAll(ks);
+  } catch (e) {}
+}
+// daftar harus dibangun ulang setelah ada perubahan
+function bust_() { cdel_('L'); }
+
+// Hanya file di dalam folder album yang boleh dibaca/dihapus
+function dalamFolder_(f) {
+  const fid = folder_().getId(), ps = f.getParents();
+  while (ps.hasNext()) if (ps.next().getId() === fid) return true;
+  return false;
+}
+
+// File link video (.lnk) berisi alamat asli: tidak boleh pernah dibaca lewat jalur unduh biasa
+function lnk_(n) { return /\.lnk$/.test(n); }
+
+// Izin baca satu file (disimpan di cache supaya potongan berikutnya tidak perlu membuka Drive lagi)
+// hasil: { s: slug santri pemilik file khusus, atau '' bila publik } atau null bila ditolak
+function izin_(id) {
+  const c = cget_('z_' + id);
+  if (c !== null) { try { return JSON.parse(c); } catch (e) {} }
+  const f = DriveApp.getFileById(id);
+  if (!dalamFolder_(f) || lnk_(f.getName())) return null;
+  const o = { s: privSlug_(f.getName()) || '' };
+  cput_('z_' + id, JSON.stringify(o), 21600);
+  return o;
+}
+
+// Tag santri disimpan di nama file: tanggal_waktu_acak__slug1_slug2.jpg
+function tags_(n) {
+  const m = /__([a-z0-9_-]+)\.[a-z0-9]+$/.exec(n);
+  return m ? m[1].split('_') : [];
+}
+
+function tipe_(f, n) {
+  return lnk_(n) ? 'l' : (/^video\//.test(f.getMimeType()) ? 'v' : 'i');
+}
+
+// Sampul tanggal pilihan pemilik: satu properti per tanggal, C_2024-07-05 = id foto Drive / path foto repo
+function cov_() {
+  const c = {};
+  try {
+    const ap = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(ap).forEach(function (x) { if (x.indexOf('C_') === 0) c[x.slice(2)] = ap[x]; });
+  } catch (e) {}
+  return c;
+}
+
+// ===== Akses profil santri =====
+// Kode per santri disimpan di Script Properties (K_slug). File unggahan khusus santri diberi nama p_slug_tanggal_...
+// sehingga tidak ikut daftar publik dan hanya bisa dibaca bersama kode yang benar.
+function kodeOk_(n, c) {
+  const k = PropertiesService.getScriptProperties().getProperty('K_' + n);
+  const ok = !!k && typeof c === 'string' && c.toLowerCase() === k.toLowerCase();
+  if (!ok) Utilities.sleep(800); // memperlambat tebak-tebakan kode
+  return ok;
+}
+function privSlug_(nama) {
+  const m = /^p_([a-z0-9-]+)_/.exec(nama);
+  return m ? m[1] : null;
+}
+// true bila file publik, atau file khusus santri dengan kode santri yang benar
+function bolehBaca_(f, e) {
+  if (lnk_(f.getName())) return false;
+  const s = privSlug_(f.getName());
+  if (!s) return true;
+  return e.parameter.n === s && kodeOk_(s, String(e.parameter.c || ''));
+}
+
+// Pratinjau kecil (poster/thumbnail): dengan cache server. Hasil: {m,d,s} atau {e}
+function kecil_(id) {
+  const c = cget_('t_' + id);
+  if (c !== null) { try { return JSON.parse(c); } catch (e) {} }
+  const f = DriveApp.getFileById(id);
+  if (!dalamFolder_(f) || lnk_(f.getName())) return { e: 'ditolak' };
+  const b = f.getBlob();
+  const o = { m: b.getContentType(), d: Utilities.base64Encode(b.getBytes()), s: privSlug_(f.getName()) || '' };
+  const j = JSON.stringify(o);
+  if (j.length <= 270000) cput_('t_' + id, j, 21600);
+  return o;
+}
+
+// Satu potongan file lewat Drive API (Range). Hasil: {m,d,t (ukuran total),o}
+function potong_(id, o, l) {
+  o = Math.max(0, Math.floor(+o || 0));
+  l = Math.min(POTONG, Math.max(1, Math.floor(+l || POTONG)));
+  const r = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?alt=media&supportsAllDrives=true', {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), Range: 'bytes=' + o + '-' + (o + l - 1) },
+    muteHttpExceptions: true
+  });
+  const code = r.getResponseCode();
+  if (code !== 206 && code !== 200) throw new Error('range ' + code);
+  const h = r.getHeaders();
+  const hv = function (k) { return h[k] || h[k.toLowerCase()] || ''; };
+  let bytes = r.getContent(), total;
+  const cr = /\/(\d+)\s*$/.exec(String(hv('Content-Range')));
+  if (code === 206 && cr) total = +cr[1];
+  else { total = bytes.length; bytes = bytes.slice(o, o + l); }   // server mengabaikan Range
+  return { ok: true, m: String(hv('Content-Type')).split(';')[0] || 'application/octet-stream', d: Utilities.base64Encode(bytes), t: total, o: o };
+}
+
+function doGet(e) {
+  const a = e.parameter.a;
+  try {
+    if (a === 'l') {
+      const cached = cget_('L');
+      if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+      const rows = [], prof = {}, it = folder_().getFiles();
+      while (it.hasNext()) {
+        const f = it.next(), n = f.getName();
+        if (/\.poster\.jpg$/.test(n)) continue;
+        const pm = /^profil_([a-z0-9-]+)_(\d+)\.jpg$/.exec(n);
+        if (pm) { if (!prof[pm[1]] || +pm[2] > prof[pm[1]].ts) prof[pm[1]] = { ts: +pm[2], i: f.getId() }; continue; }
+        const m = /^(\d{4}-\d{2}-\d{2})_(\d+)_/.exec(n);
+        if (!m) continue;
+        // p = id pratinjau kecil (poster video / thumbnail foto), kosong untuk foto lama
+        rows.push({ k: m[1], ts: +m[2], f: { i: f.getId(), t: tipe_(f, n), p: f.getDescription() || '', s: tags_(n) } });
+      }
+      rows.sort(function (x, y) { return x.ts - y.ts; });
+      const k = {};
+      rows.forEach(function (r) { (k[r.k] = k[r.k] || []).push(r.f); });
+      const p = {};
+      Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
+      const js = JSON.stringify({ k: k, p: p, c: cov_() });
+      cput_('L', js, 600);
+      return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (a === 'f') {
+      const f = DriveApp.getFileById(e.parameter.id);
+      if (!dalamFolder_(f) || !bolehBaca_(f, e)) return out_({ e: 'ditolak' });
+      const b = f.getBlob();
+      return out_({ m: b.getContentType(), d: Utilities.base64Encode(b.getBytes()) });
+    }
+    if (a === 'fr') {
+      // potongan file (untuk unduh paralel foto/video besar)
+      const id = String(e.parameter.id || ''), z = izin_(id);
+      if (!z) return out_({ e: 'ditolak' });
+      if (z.s && !(e.parameter.n === z.s && kodeOk_(z.s, String(e.parameter.c || '')))) return out_({ e: 'ditolak' });
+      return out_(potong_(id, e.parameter.o, e.parameter.l));
+    }
+    if (a === 'k') {
+      // periksa kode akses santri
+      const n = String(e.parameter.n || '');
+      if (!/^[a-z0-9-]+$/.test(n)) return out_({ ok: false });
+      return out_({ ok: kodeOk_(n, String(e.parameter.c || '')) });
+    }
+    if (a === 'pl') {
+      // daftar unggahan khusus satu santri (butuh kode)
+      const n = String(e.parameter.n || '');
+      if (!/^[a-z0-9-]+$/.test(n) || !kodeOk_(n, String(e.parameter.c || ''))) return out_({ ok: false });
+      return out_({ ok: true, k: privList_(n) });
+    }
+    if (a === 'b') {
+      // ambil beberapa file kecil sekaligus (pratinjau) dalam satu permintaan
+      const ids = String(e.parameter.ids || '').split(',').slice(0, 10), r = [];
+      ids.forEach(function (id) {
+        try {
+          const o = kecil_(id);
+          if (o.e) { r.push({ i: id, e: o.e }); return; }
+          if (o.s && !(e.parameter.n === o.s && kodeOk_(o.s, String(e.parameter.c || '')))) { r.push({ i: id, e: 'ditolak' }); return; }
+          r.push({ i: id, m: o.m, d: o.d });
+        } catch (x) { r.push({ i: id, e: 'gagal' }); }
+      });
+      return out_({ r: r });
+    }
+  } catch (err) {
+    return out_({ e: String(err) });
+  }
+  return out_({ e: 'aksi tidak dikenal' });
+}
+
+// daftar unggahan khusus satu santri
+function privList_(n) {
+  const rows = [], pre = 'p_' + n + '_', it = folder_().getFiles();
+  while (it.hasNext()) {
+    const f = it.next(), nm = f.getName();
+    if (nm.indexOf(pre) !== 0 || /\.poster\.jpg$/.test(nm)) continue;
+    const m = /^p_[a-z0-9-]+_(\d{4}-\d{2}-\d{2})_(\d+)_[a-z0-9]+\.[a-z0-9]+$/.exec(nm);
+    if (!m) continue;
+    rows.push({ k: m[1], ts: +m[2], f: { i: f.getId(), t: tipe_(f, nm), p: f.getDescription() || '', s: [n] } });
+  }
+  rows.sort(function (x, y) { return x.ts - y.ts; });
+  const k = {};
+  rows.forEach(function (r) { (k[r.k] = k[r.k] || []).push(r.f); });
+  return k;
+}
+
+// ===== Baca unggahan khusus santri lewat POST (memakai PIN santri, bukan PIN pemilik) =====
+// Sama hasilnya dengan GET a=k / a=pl / a=b / a=f, tetapi PIN tidak ikut di alamat (URL) dan
+// tetap bisa dipakai bila permintaan GET berparameter ditolak oleh jaringan/peramban.
+function bacaKode_(b) {
+  const n = String(b.n || '');
+  if (!/^[a-z0-9-]+$/.test(n)) return out_({ ok: false, e: 'santri tidak valid' });
+  if (!kodeOk_(n, String(b.c || ''))) return out_({ ok: false, e: 'ditolak' });
+  if (b.a === 'ck') return out_({ ok: true });
+  if (b.a === 'plk') return out_({ ok: true, k: privList_(n) });
+  // file milik santri ini (atau file publik) saja; file santri lain ditolak
+  const boleh = function (f) {
+    if (!dalamFolder_(f) || lnk_(f.getName())) return false;
+    const s = privSlug_(f.getName());
+    return !s || s === n;
+  };
+  if (b.a === 'bk') {
+    const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 10), r = [];
+    ids.forEach(function (id) {
+      try {
+        const o = kecil_(String(id));
+        if (o.e || (o.s && o.s !== n)) { r.push({ i: id, e: 'ditolak' }); return; }
+        r.push({ i: id, m: o.m, d: o.d });
+      } catch (x) { r.push({ i: id, e: 'gagal' }); }
+    });
+    return out_({ ok: true, r: r });
+  }
+  if (b.a === 'fk') {
+    const f = DriveApp.getFileById(String(b.i));
+    if (!boleh(f)) return out_({ ok: false, e: 'ditolak' });
+    const bl = f.getBlob();
+    return out_({ ok: true, m: bl.getContentType(), d: Utilities.base64Encode(bl.getBytes()) });
+  }
+  if (b.a === 'frk') {
+    const z = izin_(String(b.i));
+    if (!z || (z.s && z.s !== n)) return out_({ ok: false, e: 'ditolak' });
+    return out_(potong_(String(b.i), b.o, b.l));
+  }
+  return out_({ ok: false, e: 'aksi tidak dikenal' });
+}
+
+// ===== VIDEO LINK =====
+// Alamat asli hanya ada di file .lnk di folder ini. Daftar (a=l) hanya memberi id + poster; alamat baru
+// dikirim lewat POST a=lp saat video akan diputar, dan hanya dipakai pemutar di dalam app.
+function bagi_(u) { try { return UrlFetchApp.fetch(u, { followRedirects: false, muteHttpExceptions: true }); } catch (e) { return null; } }
+function pendek_(u) {
+  const h = /^https:\/\/([^\/?#]+)/i.exec(u);
+  if (!h) return u;
+  const host = h[1].toLowerCase();
+  const pendek = /^(vm\.tiktok\.com|vt\.tiktok\.com|fb\.watch)$/.test(host) || (/(^|\.)facebook\.com$/.test(host) && /\/share\//.test(u));
+  if (!pendek) return u;
+  let x = u;
+  for (let i = 0; i < 3; i++) {
+    const r = bagi_(x);
+    if (!r) break;
+    const c = r.getResponseCode(), hd = r.getHeaders(), lo = hd['Location'] || hd['location'];
+    if (c >= 300 && c < 400 && /^https:/i.test(lo || '')) x = lo; else break;
+  }
+  return x;
+}
+function gambar_(u) {
+  try {
+    const r = UrlFetchApp.fetch(u, { muteHttpExceptions: true, followRedirects: true });
+    const ct = String(r.getHeaders()['Content-Type'] || r.getHeaders()['content-type'] || '');
+    if (r.getResponseCode() !== 200 || ct.indexOf('image/') !== 0) return null;
+    const by = r.getContent();
+    if (by.length < 1500 || by.length > 4000000) return null;
+    return Utilities.base64Encode(by);
+  } catch (e) { return null; }
+}
+// boleh disematkan? (header penolak bingkai)
+function bingkaiOk_(u, host) {
+  let r;
+  try { r = UrlFetchApp.fetch(u, { muteHttpExceptions: true, followRedirects: true, headers: { 'User-Agent': 'Mozilla/5.0' } }); }
+  catch (e) { return 'Link tidak bisa dijangkau.'; }
+  const c = r.getResponseCode();
+  if (c >= 400) return 'Link tidak bisa dibuka (kode ' + c + ').';
+  const h = {}, hh = r.getHeaders();
+  Object.keys(hh).forEach(function (k) { h[k.toLowerCase()] = String(hh[k]); });
+  const xf = (h['x-frame-options'] || '').toLowerCase();
+  if (/deny|sameorigin/.test(xf)) return 'Platform ini melarang video disematkan di aplikasi lain.';
+  const m = /frame-ancestors([^;]*)/i.exec(h['content-security-policy'] || '');
+  if (m && m[1].indexOf('*') < 0 && (!host || m[1].indexOf(host) < 0)) return 'Platform ini melarang video disematkan di aplikasi lain.';
+  return '';
+}
+function videoLangsung_(u) {
+  try {
+    const r = UrlFetchApp.fetch(u, { muteHttpExceptions: true, followRedirects: true, headers: { Range: 'bytes=0-0' } });
+    const ct = String(r.getHeaders()['Content-Type'] || r.getHeaders()['content-type'] || '');
+    return (r.getResponseCode() === 200 || r.getResponseCode() === 206) && /^video\//i.test(ct);
+  } catch (e) { return false; }
+}
+
+// hasil: {k: 'yt'|'if'|'vd', s: id atau alamat, t: nama platform, poster: base64 atau ''} atau {e}
+function urai_(raw, host) {
+  raw = String(raw || '').trim();
+  if (!raw) return { e: 'Link kosong.' };
+  if (raw.length > 3000) return { e: 'Link terlalu panjang.' };
+  const em = /<iframe[^>]*?\ssrc\s*=\s*["']([^"']+)["']/i.exec(raw);
+  let emb = false;
+  if (em) { raw = em[1].replace(/&amp;/g, '&'); emb = true; }
+  if (raw.indexOf('//') === 0) raw = 'https:' + raw;
+  if (!/^https:\/\//i.test(raw)) return { e: 'Link harus diawali https:// (atau tempel kode embed <iframe>).' };
+  const u = pendek_(raw);
+  let x;
+  if ((x = /^https:\/\/(?:www\.|m\.|music\.)?(?:youtube\.com|youtube-nocookie\.com)\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|v\/)([A-Za-z0-9_-]{11})/i.exec(u)) ||
+      (x = /^https:\/\/youtu\.be\/([A-Za-z0-9_-]{11})/i.exec(u))) {
+    return { k: 'yt', s: x[1], t: 'YouTube', poster: gambar_('https://i.ytimg.com/vi/' + x[1] + '/maxresdefault.jpg') || gambar_('https://i.ytimg.com/vi/' + x[1] + '/mqdefault.jpg') || '' };
+  }
+  if ((x = /^https:\/\/(?:www\.)?vimeo\.com\/(?:channels\/[^\/]+\/|groups\/[^\/]+\/videos\/|video\/)?(\d+)(?:\/([a-f0-9]+))?/i.exec(u)) ||
+      (x = /^https:\/\/player\.vimeo\.com\/video\/(\d+)(?:\?(?:[^#]*&)?h=([a-f0-9]+))?/i.exec(u))) {
+    let po = '';
+    try {
+      const j = JSON.parse(UrlFetchApp.fetch('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent('https://vimeo.com/' + x[1] + (x[2] ? '/' + x[2] : '')), { muteHttpExceptions: true }).getContentText());
+      if (j && j.thumbnail_url) po = gambar_(String(j.thumbnail_url).replace(/_\d+x\d+/, '_640')) || '';
+    } catch (e) {}
+    return { k: 'if', s: 'https://player.vimeo.com/video/' + x[1] + '?dnt=1&title=0&byline=0&portrait=0&autoplay=1' + (x[2] ? '&h=' + x[2] : ''), t: 'Vimeo', poster: po };
+  }
+  if ((x = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]{15,})/i.exec(u))) {
+    return { k: 'if', s: 'https://drive.google.com/file/d/' + x[1] + '/preview', t: 'Google Drive', d: 1, poster: gambar_('https://drive.google.com/thumbnail?id=' + x[1] + '&sz=w640') || '' };
+  }
+  if ((x = /^https:\/\/(?:www\.)?dailymotion\.com\/(?:video|embed\/video)\/([A-Za-z0-9]+)/i.exec(u)) || (x = /^https:\/\/dai\.ly\/([A-Za-z0-9]+)/i.exec(u))) {
+    return { k: 'if', s: 'https://www.dailymotion.com/embed/video/' + x[1] + '?autoplay=1&ui-logo=0&sharing-enable=0&queue-enable=0', t: 'Dailymotion', poster: gambar_('https://www.dailymotion.com/thumbnail/video/' + x[1]) || '' };
+  }
+  if (/^https:\/\/(?:www\.|m\.|web\.|mbasic\.)?facebook\.com\/(?:plugins\/video\.php\?href=)?/i.test(u) && /(\/videos?\/|\/watch|\/reel\/|plugins\/video)/i.test(u)) {
+    let href = u;
+    const hm = /plugins\/video\.php\?(?:[^#]*&)?href=([^&]+)/i.exec(u);
+    if (hm) href = decodeURIComponent(hm[1]);
+    return { k: 'if', s: 'https://www.facebook.com/plugins/video.php?show_text=false&autoplay=true&href=' + encodeURIComponent(href), t: 'Facebook', poster: '' };
+  }
+  if ((x = /^https:\/\/(?:www\.)?instagram\.com\/(?:[A-Za-z0-9_.]+\/)?(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i.exec(u))) {
+    return { k: 'if', s: 'https://www.instagram.com/' + (x[1] === 'reels' ? 'reel' : x[1]) + '/' + x[2] + '/embed', t: 'Instagram', poster: '' };
+  }
+  if ((x = /^https:\/\/(?:www\.)?tiktok\.com\/(?:@[^\/]+\/video|embed(?:\/v2)?|v)\/(\d+)/i.exec(u))) {
+    return { k: 'if', s: 'https://www.tiktok.com/embed/v2/' + x[1], t: 'TikTok', poster: '' };
+  }
+  if ((x = /^https:\/\/(?:www\.|m\.)?twitch\.tv\/videos\/(\d+)/i.exec(u))) {
+    return { k: 'if', s: 'https://player.twitch.tv/?video=v' + x[1] + '&autoplay=true&parent={PARENT}', t: 'Twitch', poster: '' };
+  }
+  if ((x = /^https:\/\/(?:www\.|m\.)?twitch\.tv\/[^\/]+\/clip\/([A-Za-z0-9_-]+)/i.exec(u)) || (x = /^https:\/\/clips\.twitch\.tv\/(?:embed\?clip=)?([A-Za-z0-9_-]+)/i.exec(u))) {
+    return { k: 'if', s: 'https://clips.twitch.tv/embed?clip=' + x[1] + '&autoplay=true&parent={PARENT}', t: 'Twitch', poster: '' };
+  }
+  if ((x = /^https:\/\/streamable\.com\/(?:e\/)?([a-z0-9]+)\/?$/i.exec(u))) {
+    return { k: 'if', s: 'https://streamable.com/e/' + x[1] + '?autoplay=1', t: 'Streamable', poster: '' };
+  }
+  // file video langsung (.mp4 dsb. di server mana pun)
+  if (/^https:\/\/[^?#]+\.(mp4|webm|mov|m4v|ogv)(\?[^#]*)?(#.*)?$/i.test(u) || (!emb && videoLangsung_(u))) {
+    return { k: 'vd', s: u, t: 'Video', poster: '' };
+  }
+  if (/\.m3u8(\?|#|$)/i.test(u)) return { e: 'Format siaran langsung (.m3u8) belum didukung.' };
+  // platform lain: hanya diterima bila mengizinkan disematkan
+  const err = bingkaiOk_(u, host);
+  if (err) return { e: err };
+  let hn = 'Video';
+  const hm2 = /^https:\/\/(?:www\.)?([^\/:?#]+)/i.exec(u);
+  if (hm2) hn = hm2[1];
+  return { k: 'if', s: u, t: hn, poster: '' };
+}
+
+// Putar: kembalikan alamat pemutar hanya untuk file link yang boleh dibaca peminta
+function putar_(b) {
+  const f = DriveApp.getFileById(String(b.i));
+  const nm = f.getName();
+  if (!dalamFolder_(f) || !lnk_(nm)) return out_({ ok: false, e: 'ditolak' });
+  const s = privSlug_(nm);
+  if (s && !(String(b.n || '') === s && kodeOk_(s, String(b.c || '')))) return out_({ ok: false, e: 'ditolak' });
+  let o;
+  try { o = JSON.parse(f.getBlob().getDataAsString()); } catch (e) { return out_({ ok: false, e: 'gagal' }); }
+  return out_({ ok: true, k: o.k, s: o.s, d: o.d || 0 });
+}
+
+function doPost(e) {
+  try {
+    const b = JSON.parse(e.postData.contents);
+    // pembacaan oleh santri/pengunjung memakai PIN santri; semua aksi lain butuh PIN pemilik
+    if (b.a === 'ck' || b.a === 'plk' || b.a === 'bk' || b.a === 'fk' || b.a === 'frk') return bacaKode_(b);
+    if (b.a === 'lp') return putar_(b);
+    if (b.pin !== PIN) return out_({ ok: false, e: 'pin' });
+
+    // pemeriksaan PIN dari index.html (tombol mode pemilik)
+    if (b.a === 'cek') return out_({ ok: true });
+
+    if (b.a === 'up') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      if (!/^(image|video)\//.test(b.m)) return out_({ ok: false, e: 'jenis file tidak didukung' });
+      const vid = /^video\//.test(b.m);
+      const ext = vid ? b.m.split('/')[1].replace('quicktime', 'mov').replace(/[^a-z0-9]/gi, '') : ({'image/png':'png','image/webp':'webp','image/gif':'gif'}[b.m] || 'jpg');
+      const tg = (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
+      const nama = b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
+      const dir = folder_();
+      let file = null, po = null;
+      try {
+        file = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.d), b.m, nama + '.' + ext));
+        let p = '';
+        if (b.p) {
+          // pratinjau kecil: poster untuk video, thumbnail untuk foto
+          po = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.p), 'image/jpeg', nama + '.poster.jpg'));
+          p = po.getId();
+          file.setDescription(p);
+        }
+        bust_();
+        return out_({ ok: true, akun: NAMA_AKUN, f: { i: file.getId(), t: vid ? 'v' : 'i', p: p, s: tg } });
+      } catch (err) {
+        // gagal simpan (mis. penyimpanan penuh): bersihkan sisa, minta album mencoba akun berikutnya (r:true)
+        if (file) { try { file.setTrashed(true); } catch (x) {} }
+        if (po) { try { po.setTrashed(true); } catch (x) {} }
+        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+      }
+    }
+
+    if (b.a === 'lnk') {
+      // tambah video link: album umum (b.k tanggal, b.s tag) atau halaman santri (b.n slug)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      const sl = b.n ? String(b.n) : '';
+      if (sl && !/^[a-z0-9-]+$/.test(sl)) return out_({ ok: false, e: 'santri tidak valid' });
+      const r = urai_(b.u, String(b.h || ''));
+      if (r.e) return out_({ ok: false, e: r.e, tolak: true });
+      const tg = sl ? [] : (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
+      const nama = (sl ? 'p_' + sl + '_' : '') + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
+      const dir = folder_();
+      let file = null, po = null;
+      try {
+        file = dir.createFile(nama + '.lnk', JSON.stringify({ k: r.k, s: r.s, d: r.d || 0 }), 'text/plain');
+        const pd = r.poster || b.p || '';
+        let p = '';
+        if (pd) {
+          po = dir.createFile(Utilities.newBlob(Utilities.base64Decode(pd), 'image/jpeg', nama + '.poster.jpg'));
+          p = po.getId();
+          file.setDescription(p);
+        }
+        bust_();
+        return out_({ ok: true, akun: NAMA_AKUN, t: r.t, f: { i: file.getId(), t: 'l', p: p, s: sl ? [sl] : tg } });
+      } catch (err) {
+        if (file) { try { file.setTrashed(true); } catch (x) {} }
+        if (po) { try { po.setTrashed(true); } catch (x) {} }
+        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+      }
+    }
+
+    if (b.a === 'prof') {
+      if (!/^[a-z0-9-]+$/.test(b.n)) return out_({ ok: false, e: 'santri tidak valid' });
+      const dir = folder_();
+      let f;
+      try {
+        // simpan yang baru dulu; yang lama dibuang hanya bila yang baru berhasil
+        f = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.d), 'image/jpeg', 'profil_' + b.n + '_' + Date.now() + '.jpg'));
+      } catch (err) {
+        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+      }
+      const lama = dir.getFiles(), baru = f.getId();
+      while (lama.hasNext()) { const o = lama.next(); if (o.getId() !== baru && o.getName().indexOf('profil_' + b.n + '_') === 0) o.setTrashed(true); }
+      bust_();
+      return out_({ ok: true, akun: NAMA_AKUN, i: baru });
+    }
+
+    if (b.a === 'del') {
+      const f = DriveApp.getFileById(b.i);
+      if (!dalamFolder_(f)) return out_({ ok: false, e: 'ditolak' });
+      const d = f.getDescription();
+      if (d) { try { DriveApp.getFileById(d).setTrashed(true); } catch (x) {} cdel_('t_' + d); cdel_('z_' + d); }
+      f.setTrashed(true);
+      cdel_('t_' + b.i); cdel_('z_' + b.i); bust_();
+      return out_({ ok: true });
+    }
+
+    if (b.a === 'tag') {
+      // ubah tag santri: ganti bagian "__slug1_slug2" pada nama file (id file tetap)
+      const f = DriveApp.getFileById(b.i);
+      if (!dalamFolder_(f)) return out_({ ok: false, e: 'ditolak' });
+      const m = /^(\d{4}-\d{2}-\d{2}_\d+_[a-z0-9]+)(?:__[a-z0-9_-]+)?(\.[a-z0-9]+)$/.exec(f.getName());
+      if (!m) return out_({ ok: false, e: 'nama file tidak dikenali' });
+      const tg = (Array.isArray(b.s) ? b.s : []).filter(function (x) { return typeof x === 'string' && /^[a-z0-9-]+$/.test(x); });
+      f.setName(m[1] + (tg.length ? '__' + tg.join('_') : '') + m[2]);
+      bust_();
+      return out_({ ok: true, s: tg });
+    }
+
+    if (b.a === 'sup') {
+      // unggahan khusus halaman santri: tidak masuk daftar publik (galeri/kalender)
+      if (!/^[a-z0-9-]+$/.test(b.n)) return out_({ ok: false, e: 'santri tidak valid' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      if (!/^(image|video)\//.test(b.m)) return out_({ ok: false, e: 'jenis file tidak didukung' });
+      const vid = /^video\//.test(b.m);
+      const ext = vid ? b.m.split('/')[1].replace('quicktime', 'mov').replace(/[^a-z0-9]/gi, '') : ({'image/png':'png','image/webp':'webp','image/gif':'gif'}[b.m] || 'jpg');
+      const nama = 'p_' + b.n + '_' + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const dir = folder_();
+      let file = null, po = null;
+      try {
+        file = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.d), b.m, nama + '.' + ext));
+        let p = '';
+        if (b.p) {
+          po = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.p), 'image/jpeg', nama + '.poster.jpg'));
+          p = po.getId();
+          file.setDescription(p);
+        }
+        return out_({ ok: true, akun: NAMA_AKUN, f: { i: file.getId(), t: vid ? 'v' : 'i', p: p, s: [b.n] } });
+      } catch (err) {
+        if (file) { try { file.setTrashed(true); } catch (x) {} }
+        if (po) { try { po.setTrashed(true); } catch (x) {} }
+        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+      }
+    }
+
+    if (b.a === 'pd') {
+      // diagnosa unggahan khusus satu santri (untuk pemilik): versi, kode, dan nama file yang ada di akun ini
+      const n = String(b.n || '');
+      if (!/^[a-z0-9-]+$/.test(n)) return out_({ ok: false, e: 'santri tidak valid' });
+      const cocok = [], slugs = {}, it = folder_().getFiles();
+      let semua = 0;
+      while (it.hasNext()) {
+        const nm = it.next().getName();
+        if (/\.poster\.jpg$/.test(nm) || nm.indexOf('p_') !== 0) continue;
+        semua++;
+        const sm = /^p_([a-z0-9-]+)_/.exec(nm);
+        if (sm) slugs[sm[1]] = (slugs[sm[1]] || 0) + 1;
+        if (nm.indexOf('p_' + n + '_') === 0 && cocok.length < 10) cocok.push(nm);
+      }
+      return out_({ ok: true, v: 5, akun: NAMA_AKUN, kode: !!PropertiesService.getScriptProperties().getProperty('K_' + n), cocok: cocok, jml: slugs[n] || 0, semua: semua, slugs: slugs });
+    }
+
+    if (b.a === 'kl') {
+      // daftar kode akses semua santri (untuk pemilik)
+      const ap = PropertiesService.getScriptProperties().getProperties(), m = {};
+      Object.keys(ap).forEach(function (x) { if (x.indexOf('K_') === 0) m[x.slice(2)] = ap[x]; });
+      return out_({ ok: true, m: m });
+    }
+
+    if (b.a === 'kodes') {
+      // atur kode akses: { slug: "KODE" }, kode kosong = hapus (profil terkunci untuk pengunjung)
+      const sp = PropertiesService.getScriptProperties(), m = (b.m && typeof b.m === 'object') ? b.m : {};
+      const ks = Object.keys(m);
+      for (let i = 0; i < ks.length; i++) {
+        if (!/^[a-z0-9-]+$/.test(ks[i])) return out_({ ok: false, e: 'santri tidak valid' });
+        const v = m[ks[i]];
+        if (v && !/^[A-Za-z0-9]{4,32}$/.test(String(v))) return out_({ ok: false, e: 'PIN harus 4-32 huruf/angka' });
+      }
+      ks.forEach(function (n) { if (m[n]) sp.setProperty('K_' + n, String(m[n])); else sp.deleteProperty('K_' + n); });
+      return out_({ ok: true });
+    }
+
+    if (b.a === 'cov') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      const sp = PropertiesService.getScriptProperties();
+      if (!b.v) { sp.deleteProperty('C_' + b.k); bust_(); return out_({ ok: true }); }
+      if (typeof b.v !== 'string' || b.v.length > 300) return out_({ ok: false, e: 'sampul tidak valid' });
+      sp.setProperty('C_' + b.k, b.v);
+      bust_();
+      return out_({ ok: true });
+    }
+  } catch (err) {
+    return out_({ ok: false, e: String(err) });
+  }
+  return out_({ ok: false, e: 'aksi tidak dikenal' });
+}
+
+// ===== Khusus akun baru: jalankan fungsi ini SEKALI dari editor (pilih "izinAkun" lalu Jalankan) =====
+// untuk menyetujui izin Drive + terhubung ke layanan eksternal. Setelah itu: Terapkan > Deployment baru > Aplikasi web.
+function izinAkun() {
+  DriveApp.getRootFolder();
+  UrlFetchApp.fetch('https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg');
+}
+</script>
 <script>
 (function(){
   var KEY="album-foto", data={}, S=defMonth();
@@ -2829,6 +3446,34 @@ button.b.alt.emas.ikon[hidden]{display:none}
       });
     })();
     tb.hidden=!window.CLOUD_OWNER;
+    /* unduh berkas aplikasi (hanya mode pemilik): index.html diambil dari alamat aplikasi sendiri, Code.gs dari salinan di halaman ini */
+    (function(){
+      var own=document.getElementById("own"), bh=document.getElementById("dlhtml"), bg=document.getElementById("dlgs");
+      if(!own||!bh||!bg) return;
+      own.hidden=!window.CLOUD_OWNER;
+      function simpanBerkas(nama,blob){
+        var a=document.createElement("a"), u=URL.createObjectURL(blob);
+        a.href=u; a.download=nama; a.style.display="none"; document.body.appendChild(a); a.click();
+        setTimeout(function(){URL.revokeObjectURL(u);a.remove();},2000);
+      }
+      bg.addEventListener("click",function(){
+        var el=document.getElementById("kodegs"), t=el?el.textContent:"";
+        if(!t){toast("Code.gs tidak ditemukan.");return;}
+        simpanBerkas("Code.gs",new Blob([t],{type:"application/octet-stream"}));
+        toast("Code.gs diunduh");
+      });
+      bh.addEventListener("click",function(){
+        var url=pathMode?base()+"index.html":location.pathname, lab=bh.querySelector("span"), t0=lab.textContent;
+        bh.disabled=true; lab.textContent="Mengunduh\u2026";
+        function ambil(o){return fetch(url,o).then(function(r){if(!r.ok) throw new Error("http "+r.status); return r.blob();});}
+        ambil({cache:"no-cache"}).catch(function(){return ambil({});}).then(function(b){
+          simpanBerkas("index.html",new Blob([b],{type:"text/html"}));
+          toast("index.html diunduh");
+        }).catch(function(){
+          toast("Gagal mengunduh index.html. Periksa koneksi lalu coba lagi.");
+        }).then(function(){bh.disabled=false;lab.textContent=t0;});
+      });
+    })();
     var tl=document.getElementById("tlink"), slinkB=document.getElementById("slink");
     if(tl){
       tl.hidden=!window.CLOUD_OWNER;
