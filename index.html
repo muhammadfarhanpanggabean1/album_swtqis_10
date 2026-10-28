@@ -348,6 +348,24 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .own .bar{justify-content:center;margin:10px 0 0}
 .own button.b.alt.emas{display:inline-flex;align-items:center;gap:8px;padding:8px 18px}
 .own button.b.alt.emas:disabled{opacity:.55;cursor:default}
+.sant .mj{font-size:.7rem;font-weight:700;color:var(--muted);margin-top:-4px}
+.sgal .sb.mb{padding:12px 6px 4px}
+.sgal .sb.mb .sh{padding:0 6px 10px}
+#mback{min-height:44px;padding:8px 20px;font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:.01em;color:var(--emas);background:color-mix(in srgb,var(--surface) 55%,transparent);border:1px solid var(--emas-garis);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#mback:active{background:color-mix(in srgb,var(--emas-garis) 22%,transparent)}
+#mback:focus-visible{outline:3px solid var(--emas-garis);outline-offset:2px}
+.tabs button.b{white-space:nowrap;padding:10px 6px}
+.dv{display:flex;flex-direction:column;gap:16px;margin-top:8px}
+.dv .kd{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 12px 12px;box-shadow:0 6px 20px rgba(210,140,100,.16)}
+.dv h3{margin:0 0 4px;font-family:"Fraunces",Georgia,serif;font-size:1.15rem;font-weight:600}
+.dv p{margin:0 0 6px;color:var(--muted);font-size:.85rem;line-height:1.5}
+.dv .bar{margin:8px 0 0}
+.dv .bag{margin-top:14px}
+.dv .bh{display:flex;align-items:center;gap:8px}
+.dv .bh b{flex:1;font-family:"Fraunces",Georgia,serif;font-weight:600}
+.dv .bh span{color:var(--muted);font-size:.75rem;font-weight:700}
+.dv .bh button.b{padding:6px 14px}
+.dv textarea{display:block;width:100%;height:220px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto;-webkit-user-select:text;user-select:text;touch-action:pan-x pan-y}
 </style>
 </head>
 <body>
@@ -370,14 +388,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     <div class="row" id="memrow"></div>
   </section>
   <p class="hint" id="note"></p>
-  <section class="own" id="own" hidden aria-label="Berkas aplikasi">
-    <small>Berkas aplikasi</small>
-    <div class="bar">
-      <button class="b alt emas" id="dlhtml" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg><span>index.html</span></button>
-      <button class="b alt emas" id="dlgs" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg><span>Code.gs</span></button>
-    </div>
-  </section>
-</main>
+  </main>
 <section id="panel" class="panel" hidden>
   <h2 id="dt"></h2>
   <p class="addr" id="daddr"></p>
@@ -403,7 +414,51 @@ button.b.alt.emas.ikon[hidden]{display:none}
 </section>
 <section id="momen" class="panel sant" hidden>
   <h2>Momen</h2>
-  <p class="addr">Segera hadir.</p>
+  <p class="addr" id="mjml"></p>
+  <div class="bar"><button class="b alt utama" id="mbuat" type="button" hidden>+ Buat momen</button></div>
+  <div class="list" id="mlist"></div>
+</section>
+<section id="dev" class="panel" hidden>
+  <h2>File developer</h2>
+  <p class="addr">Khusus pemilik. Salin atau unduh berkas aplikasi untuk dipasang di Apps Script dan hosting.</p>
+  <div class="dv">
+    <div class="kd">
+      <h3>Code.gs</h3>
+      <p>Dibagi 2 bagian. Tempel Bagian 1, lalu Bagian 2 tepat di bawahnya, dalam satu berkas Code.gs. Ganti PIN dan NAMA_AKUN, lalu deploy ulang.</p>
+      <div class="bar">
+        <button class="b alt utama" id="dvcall" type="button">Salin semua</button>
+        <button class="b alt" id="dvdlgs" type="button">Unduh Code.gs</button>
+      </div>
+      <div class="bag">
+        <div class="bh"><b>Bagian 1</b><span id="dvn1"></span><button class="b" id="dvc1" type="button">Salin</button></div>
+        <textarea id="dvp1" readonly spellcheck="false" aria-label="Code.gs bagian 1"></textarea>
+      </div>
+      <div class="bag">
+        <div class="bh"><b>Bagian 2</b><span id="dvn2"></span><button class="b" id="dvc2" type="button">Salin</button></div>
+        <textarea id="dvp2" readonly spellcheck="false" aria-label="Code.gs bagian 2"></textarea>
+      </div>
+    </div>
+    <div class="kd">
+      <h3>index.html</h3>
+      <p id="dvhinfo">Memuat…</p>
+      <div class="bar">
+        <button class="b alt utama" id="dvhc" type="button">Salin index.html</button>
+        <button class="b alt" id="dvhd" type="button">Unduh index.html</button>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="mdetail" class="panel sant" hidden>
+  <h2 id="mdnama"></h2>
+  <p class="addr" id="mdinfo"></p>
+  <div class="bar">
+    <button class="b alt" id="mback" type="button">Kembali ke daftar momen</button>
+    <button class="b alt utama" id="mupl" type="button" hidden>Unggah foto/video</button>
+    <button class="b alt utama" id="mlink" type="button" hidden>Tambah link video</button>
+    <button class="b alt" id="mren" type="button" hidden>Ubah nama</button>
+    <button class="b alt" id="mdel" type="button" hidden>Hapus momen</button>
+  </div>
+  <div class="sgal" id="mdbody"></div>
 </section>
 <section id="sdetail" class="panel sant" hidden>
   <h2 id="sdnama"></h2>
@@ -425,6 +480,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <button class="b" id="tabsantri" role="tab" aria-selected="false">Santri</button>
   <button class="b" id="tabgaleri" role="tab" aria-selected="false">Galeri</button>
   <button class="b" id="tabmomen" role="tab" aria-selected="false">Momen</button>
+  <button class="b" id="tabdev" role="tab" aria-selected="false">File developer</button>
 </div></nav>
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Pratinjau foto">
   <img id="lbimg" alt="">
@@ -590,6 +646,17 @@ function santri_() {
   return { n: n, x: x };
 }
 
+// Daftar momen: M_slug = nama momen (Script Properties akun pertama).
+// File momen diberi nama m_slug_tanggal_waktu_acak.ext, tidak masuk kalender/galeri, hanya tampil di tab Momen.
+function momen_() {
+  const n = {};
+  try {
+    const ap = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(ap).forEach(function (k) { if (k.indexOf('M_') === 0) n[k.slice(2)] = ap[k]; });
+  } catch (e) {}
+  return n;
+}
+
 // ===== Akses profil santri =====
 // Kode per santri disimpan di Script Properties (K_slug). File unggahan khusus santri diberi nama p_slug_tanggal_...
 // sehingga tidak ikut daftar publik dan hanya bisa dibaca bersama kode yang benar.
@@ -655,12 +722,14 @@ function doGet(e) {
     if (a === 'l') {
       const cached = cget_('L');
       if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
-      const rows = [], prof = {}, it = folder_().getFiles();
+      const rows = [], mrows = [], prof = {}, it = folder_().getFiles();
       while (it.hasNext()) {
         const f = it.next(), n = f.getName();
         if (/\.poster\.jpg$/.test(n)) continue;
         const pm = /^profil_([a-z0-9-]+)_(\d+)\.jpg$/.exec(n);
         if (pm) { if (!prof[pm[1]] || +pm[2] > prof[pm[1]].ts) prof[pm[1]] = { ts: +pm[2], i: f.getId() }; continue; }
+        const mm = /^m_([a-z0-9-]+)_(\d{4}-\d{2}-\d{2})_(\d+)_/.exec(n);
+        if (mm) { mrows.push({ s: mm[1], k: mm[2], ts: +mm[3], f: { i: f.getId(), t: tipe_(f, n), p: f.getDescription() || '', s: [] } }); continue; }
         const m = /^(\d{4}-\d{2}-\d{2})_(\d+)_/.exec(n);
         if (!m) continue;
         // p = id pratinjau kecil (poster video / thumbnail foto), kosong untuk foto lama
@@ -672,7 +741,10 @@ function doGet(e) {
       const p = {};
       Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
       const sg = santri_();
-      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x });
+      mrows.sort(function (x, y) { return x.ts - y.ts; });
+      const mf = {};
+      mrows.forEach(function (r) { const bx = mf[r.s] = mf[r.s] || {}; (bx[r.k] = bx[r.k] || []).push(r.f); });
+      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mf: mf });
       cput_('L', js, 600);
       return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
     }
@@ -948,12 +1020,13 @@ function doPost(e) {
     if (b.a === 'lnk') {
       // tambah video link: album umum (b.k tanggal, b.s tag) atau halaman santri (b.n slug)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
-      const sl = b.n ? String(b.n) : '';
+      const sl = b.n ? String(b.n) : '', mo = b.mo ? String(b.mo) : '';
       if (sl && !/^[a-z0-9-]+$/.test(sl)) return out_({ ok: false, e: 'santri tidak valid' });
+      if (mo && !/^[a-z0-9-]{1,60}$/.test(mo)) return out_({ ok: false, e: 'momen tidak valid' });
       const r = urai_(b.u, String(b.h || ''));
       if (r.e) return out_({ ok: false, e: r.e, tolak: true });
-      const tg = sl ? [] : (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
-      const nama = (sl ? 'p_' + sl + '_' : '') + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
+      const tg = (sl || mo) ? [] : (Array.isArray(b.s) ? b.s : []).filter(function (x) { return /^[a-z0-9-]+$/.test(x); });
+      const nama = (sl ? 'p_' + sl + '_' : (mo ? 'm_' + mo + '_' : '')) + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + (tg.length ? '__' + tg.join('_') : '');
       const dir = folder_();
       let file = null, po = null;
       try {
@@ -1108,6 +1181,52 @@ function doPost(e) {
       return out_({ ok: true });
     }
 
+    if (b.a === 'mn') {
+      // buat momen baru atau ubah nama momen (slug tetap). b.n = slug, b.v = nama
+      const sl = String(b.n || ''), nm = String(b.v || '').replace(/\s+/g, ' ').trim();
+      if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
+      if (nm.length < 2 || nm.length > 60) return out_({ ok: false, e: 'Nama harus 2-60 karakter' });
+      PropertiesService.getScriptProperties().setProperty('M_' + sl, nm);
+      bust_();
+      return out_({ ok: true });
+    }
+
+    if (b.a === 'md') {
+      // hapus momen dari daftar. Foto/video di Drive tidak ikut dihapus.
+      const sl = String(b.n || '');
+      if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
+      PropertiesService.getScriptProperties().deleteProperty('M_' + sl);
+      bust_();
+      return out_({ ok: true });
+    }
+
+    if (b.a === 'mup') {
+      // unggahan ke halaman momen: tidak masuk kalender/galeri
+      if (!/^[a-z0-9-]{1,60}$/.test(String(b.n || ''))) return out_({ ok: false, e: 'momen tidak valid' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      if (!/^(image|video)\//.test(b.m)) return out_({ ok: false, e: 'jenis file tidak didukung' });
+      const vid = /^video\//.test(b.m);
+      const ext = vid ? b.m.split('/')[1].replace('quicktime', 'mov').replace(/[^a-z0-9]/gi, '') : ({'image/png':'png','image/webp':'webp','image/gif':'gif'}[b.m] || 'jpg');
+      const nama = 'm_' + b.n + '_' + b.k + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const dir = folder_();
+      let file = null, po = null;
+      try {
+        file = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.d), b.m, nama + '.' + ext));
+        let p = '';
+        if (b.p) {
+          po = dir.createFile(Utilities.newBlob(Utilities.base64Decode(b.p), 'image/jpeg', nama + '.poster.jpg'));
+          p = po.getId();
+          file.setDescription(p);
+        }
+        bust_();
+        return out_({ ok: true, akun: NAMA_AKUN, f: { i: file.getId(), t: vid ? 'v' : 'i', p: p, s: [] } });
+      } catch (err) {
+        if (file) { try { file.setTrashed(true); } catch (x) {} }
+        if (po) { try { po.setTrashed(true); } catch (x) {} }
+        return out_({ ok: false, r: true, akun: NAMA_AKUN, e: 'Akun ' + NAMA_AKUN + ' penuh atau gagal menyimpan', d: String(err) });
+      }
+    }
+
     if (b.a === 'cov') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
       const sp = PropertiesService.getScriptProperties();
@@ -1133,6 +1252,7 @@ function izinAkun() {
 <script>
 (function(){
   var KEY="album-foto", data={}, S=defMonth();
+  if(!window.CLOUD_OWNER){var tdv=document.getElementById("tabdev"); if(tdv) tdv.remove();}
   var HARI=["Ahad","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"], DOW=["Ahd","Sen","Sel","Rab","Kam","Jum","Sab"];
   var BULAN=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
   function pad(n){return n<10?"0"+n:""+n;}
@@ -1161,7 +1281,7 @@ function izinAkun() {
     if(OV.length&&OV[OV.length-1]===c){ if(OVBUSY) return; OVBUSY=true; OVPEND=fn; history.back(); }
     else{ c(); fn(); }
   }
-  function rootRef(){return S.v==="santri"?"santri":(S.v==="galeri"?"galeri":(S.v==="momen"?"momen":S.y+"/"+S.m));}
+  function rootRef(){return S.v==="santri"?"santri":(S.v==="galeri"?"galeri":(S.v==="momen"?"momen":(S.v==="dev"?"dev":S.y+"/"+S.m)));}
   function toast(t){
     if(!toastEl){toastEl=document.createElement("div");toastEl.className="toast";toastEl.setAttribute("role","status");document.body.appendChild(toastEl);}
     toastEl.textContent=t; void toastEl.offsetWidth; toastEl.classList.add("on");
@@ -1174,7 +1294,7 @@ function izinAkun() {
   }
   function atBase(){
     var v=S.v;
-    if(v==="santri"||v==="galeri"||v==="momen"){
+    if(v==="santri"||v==="galeri"||v==="momen"||v==="dev"){
       S={y:S.y,m:S.m,d:null};
       try{history.replaceState({g:0},"",urlFor(rootRef()));history.pushState({g:1},"",urlFor(rootRef()));}catch(e){}
       show(); return;
@@ -1188,8 +1308,8 @@ function izinAkun() {
       var st=history.state||{};
       if(st.g===0){history.pushState({g:1},"",location.href);return;}
       if(st.g||st.day||st.sn||st.lb||st.ov) return;
-      var deep=S.d?{day:1}:((S.v==="santri"&&S.s)?{sn:1}:null);
-      var root=S.d?urlFor(S.y+"/"+S.m):(deep?urlFor("santri"):location.href), cur=location.href;
+      var deep=S.d?{day:1}:(((S.v==="santri"||S.v==="momen")&&S.s)?{sn:1}:null);
+      var root=S.d?urlFor(S.y+"/"+S.m):(deep?urlFor(S.v==="momen"?"momen":"santri"):location.href), cur=location.href;
       history.replaceState({g:0},"",root);
       history.pushState({g:1},"",root);
       if(deep) history.pushState(deep,"",cur);
@@ -1252,6 +1372,7 @@ function izinAkun() {
   ];
   /* Daftar akhir = daftar dasar + tambahan/ganti nama dari server (SN) - yang dihapus (SX). Slug tetap, jadi foto dan PIN tidak hilang saat ganti nama. */
   var SANTRI=[], SLUG={}, SN={}, SX=[];
+  var MOMEN={}, momenMap={};
   function slugRaw(n){return n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
   function slugOf(n){return Object.prototype.hasOwnProperty.call(SLUG,n)?SLUG[n]:slugRaw(n);}
   function rebuildSantri(){
@@ -1268,7 +1389,9 @@ function izinAkun() {
   function parse(){
     var h=pathMode?rest():location.hash.replace(/^#\/?/,"");
     if(/^galeri\/?$/.test(h)) return {y:S.y,m:S.m,d:null,v:"galeri"};
-    if(/^momen\/?$/.test(h)) return {y:S.y,m:S.m,d:null,v:"momen"};
+    if(/^dev\/?$/.test(h)) return window.CLOUD_OWNER?{y:S.y,m:S.m,d:null,v:"dev"}:defMonth();
+    var mom=/^momen(?:\/([^\/?#]*))?\/?$/.exec(h);
+    if(mom){var ms=mom[1]?decodeURIComponent(mom[1]):null;return {y:S.y,m:S.m,d:null,v:"momen",s:(ms&&/^[a-z0-9-]{1,60}$/.test(ms))?ms:null};}
     var sm=/^santri(?:\/([^\/?#]*))?\/?$/.exec(h);
     if(sm){var sl=sm[1]?decodeURIComponent(sm[1]):null;return {y:S.y,m:S.m,d:null,v:"santri",s:(sl&&santriBySlug(sl))?sl:null};}
     var p=h.split(/[\/\-]/).filter(Boolean).map(Number);
@@ -2137,8 +2260,8 @@ function izinAkun() {
   }
   /* ===== Tab Santri ===== */
   var santriEl=document.getElementById("santri"), sdetEl=document.getElementById("sdetail"), tabsEl=document.getElementById("tabs");
-  var tabAlbum=document.getElementById("tabalbum"), tabSantri=document.getElementById("tabsantri"), tabGaleri=document.getElementById("tabgaleri"), tabMomen=document.getElementById("tabmomen");
-  var galeriEl=document.getElementById("galeri"), momenEl=document.getElementById("momen");
+  var tabAlbum=document.getElementById("tabalbum"), tabSantri=document.getElementById("tabsantri"), tabGaleri=document.getElementById("tabgaleri"), tabMomen=document.getElementById("tabmomen"), tabDev=document.getElementById("tabdev"), devEl=document.getElementById("dev");
+  var galeriEl=document.getElementById("galeri"), momenEl=document.getElementById("momen"), mdetEl=document.getElementById("mdetail");
   function initials(n){
     var w=n.split(/\s+/).filter(Boolean);
     return ((w[0]||"").charAt(0)+(w.length>1?w[w.length-1].charAt(0):"")).toUpperCase();
@@ -2316,15 +2439,106 @@ function izinAkun() {
       blk.appendChild(head); blk.appendChild(grid); box.appendChild(blk);
     });
   }
+  /* ===== Tab Momen: daftar kartu momen, lalu halaman momen berisi blok per tanggal ===== */
+  function goMomen(sl){
+    try{history.pushState({sn:1},"",urlFor("momen/"+sl));}catch(e){}
+    S={y:S.y,m:S.m,d:null,v:"momen",s:sl}; show();
+  }
+  function momenList(){
+    return Object.keys(MOMEN).filter(function(s){return typeof MOMEN[s]==="string"&&MOMEN[s];}).sort(function(a,b){
+      var ea=momenMap[a]||{}, eb=momenMap[b]||{}, la=ea.last||"9999", lb2=eb.last||"9999";
+      return la<lb2?1:(la>lb2?-1:MOMEN[a].localeCompare(MOMEN[b],"id"));
+    });
+  }
+  function renderMomenList(){
+    var box=document.getElementById("mlist"), ls=momenList(), own=!!(window.CLOUD_URL&&window.CLOUD_OWNER);
+    box.innerHTML="";
+    document.getElementById("mjml").textContent=ls.length?ls.length+" momen":"";
+    if(!ls.length){
+      box.innerHTML='<div class="kosong" style="grid-column:1/-1"><p></p></div>';
+      box.querySelector("p").textContent=own?"Belum ada momen. Tekan + Buat momen untuk memulai.":"Belum ada momen.";
+      return;
+    }
+    ls.forEach(function(s){
+      var nm0=MOMEN[s], e=momenMap[s]||{}, b=document.createElement("button"), av=document.createElement("span"), nm=document.createElement("span"), jm=document.createElement("span");
+      b.type="button"; b.className="kartu"; b.setAttribute("aria-label",nm0);
+      av.className="av"; av.textContent=initials(nm0);
+      if(e.cover&&e.cover.indexOf("data:image/gif")!==0){
+        var im=document.createElement("img"); im.alt=""; im.loading="lazy"; im.draggable=false;
+        im.addEventListener("load",function(){av.className="av ada";});
+        im.addEventListener("error",function(){im.remove();});
+        im.src=e.cover; av.appendChild(im);
+      }
+      nm.className="nm"; nm.textContent=nm0;
+      jm.className="nm mj"; jm.textContent=e.total?e.total+" foto/video":"Masih kosong";
+      b.appendChild(av); b.appendChild(nm); b.appendChild(jm);
+      b.addEventListener("click",function(){goMomen(s);});
+      box.appendChild(b);
+    });
+  }
+  /* sel foto: sama persis dengan halaman tanggal (kolom, rasio asli potret/landscape, ukuran Kecil/Sedang/Besar) */
+  function momenCell(wrap,src,n,items,thumbs,delFn){
+    var w=document.createElement("div"); w.className="ph";
+    var im=document.createElement("img"); im.decoding="async"; im.alt="Foto "+n; im.tabIndex=0; thumbs[n-1]=im;
+    if(UK===3){
+      var tf=thumbOf(src);
+      if(tf!==src) im.addEventListener("error",function f(){im.removeEventListener("error",f);im.src=tf;});
+      im.src=src;
+      if(window.CLOUD&&CLOUD.isBig(src)) CLOUD.big(src,function(b){im.src=b;});
+    }else setThumb(im,src);
+    if(n>8) im.loading="lazy";
+    function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
+    im.addEventListener("load",fit); longPress(im,items,n-1,thumbs); w.appendChild(im); if(im.complete) fit();
+    if(delFn){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Hapus foto "+n);x.addEventListener("click",delFn);w.appendChild(x);}
+    wrap.appendChild(w);
+  }
+  function renderMomenDetail(sl){
+    var nm=MOMEN[sl]||"", e=momenMap[sl]||{tanggal:{},f:{}}, box=document.getElementById("mdbody"), inf=document.getElementById("mdinfo");
+    var keys=Object.keys(e.tanggal).sort(), total=0, nv=0, own=!!(window.CLOUD&&CLOUD.owner());
+    document.getElementById("mdnama").textContent=nm;
+    document.title="Album SWTQIS-10 \u00b7 "+(nm||"Momen");
+    box.innerHTML="";
+    keys.forEach(function(k){total+=e.tanggal[k].length; e.f[k].forEach(function(f){if(f.t==="v"||f.t==="l") nv++;});});
+    inf.textContent=total?(total-nv)+" foto"+(nv?" \u00b7 "+nv+" video":"")+" \u00b7 "+keys.length+" tanggal":"";
+    if(!keys.length){
+      box.innerHTML='<div class="kosong"><p></p></div>';
+      box.querySelector("p").textContent=(window.CLOUD_URL&&window.CLOUD_OWNER)?"Belum ada foto di momen ini. Tekan Unggah foto/video untuk mengisi.":"Belum ada foto di momen ini.";
+      return;
+    }
+    keys.forEach(function(k){
+      var a=k.split("-"), y=+a[0], m=+a[1], d=+a[2], items=e.tanggal[k], files=e.f[k], thumbs=[];
+      var blk=document.createElement("section"), head=document.createElement("div"), left=document.createElement("div");
+      var lab=document.createElement("div"), cnt=document.createElement("span"), ph=document.createElement("div");
+      var v2=files.filter(function(f){return f.t==="v"||f.t==="l";}).length;
+      blk.className="sb mb"; head.className="sh"; left.className="sd"; lab.className="hr"; ph.className="photos";
+      lab.textContent=HARI[new Date(y,m-1,d).getDay()]+", "+d+" "+BULAN[m-1]+" "+y;
+      cnt.className="sc"; cnt.textContent=(items.length-v2)+" foto"+(v2?" \u00b7 "+v2+" video":"");
+      left.appendChild(lab); head.appendChild(left); head.appendChild(cnt);
+      items.forEach(function(src,i){
+        momenCell(ph,src,i+1,items,thumbs,own?function(){CLOUD.delMomen(sl,k,files[i]);}:null);
+      });
+      blk.appendChild(head); blk.appendChild(ph); box.appendChild(blk);
+    });
+  }
+  document.getElementById("mback").addEventListener("click",function(){
+    if(history.state&&history.state.sn){history.back();return;}
+    try{history.replaceState(null,"",urlFor("momen"));}catch(e){}
+    S={y:S.y,m:S.m,d:null,v:"momen",s:null}; show();
+  });
   function goTab(t){
     var sv=S.v==="santri"&&!S.s;
+    if(t==="dev"){
+      if(S.v==="dev"||!window.CLOUD) return;
+      CLOUD.gate(function(){rep("dev"); S={y:S.y,m:S.m,d:null,v:"dev"}; show();});
+      return;
+    }
     if(t==="galeri"){
       if(S.v==="galeri") return;
       rep("galeri");
       S={y:S.y,m:S.m,d:null,v:"galeri"}; show(); return;
     }
     if(t==="momen"){
-      if(S.v==="momen") return;
+      if(S.v==="momen"&&!S.s) return;
       rep("momen");
       S={y:S.y,m:S.m,d:null,v:"momen"}; show(); return;
     }
@@ -2342,6 +2556,7 @@ function izinAkun() {
   tabSantri.addEventListener("click",function(){goTab("santri");});
   tabGaleri.addEventListener("click",function(){goTab("galeri");});
   tabMomen.addEventListener("click",function(){goTab("momen");});
+  if(tabDev) tabDev.addEventListener("click",function(){goTab("dev");});
   document.getElementById("sback").addEventListener("click",function(){
     if(history.state&&history.state.sn){history.back();return;}
     try{history.replaceState(null,"",urlFor("santri"));}catch(e){}
@@ -2367,6 +2582,7 @@ function izinAkun() {
     try{localStorage.setItem(UKKEY,String(UK));}catch(e){}
     ukSync();
     if(!panel.hidden) list();
+    if(!mdetEl.hidden) renderMomenDetail(S.s);
   }
   function mkUk(){
     var w=document.createElement("div"); w.className="uk"; w.setAttribute("role","group"); w.setAttribute("aria-label","Ukuran foto");
@@ -2382,6 +2598,7 @@ function izinAkun() {
   (function(){
     document.querySelector("#panel .bar").appendChild(mkUk());
     document.querySelector("#sdetail .bar").appendChild(mkUk());
+    document.querySelector("#mdetail .bar").appendChild(mkUk());
     var gb=document.createElement("div"); gb.className="bar"; gb.appendChild(mkUk());
     var gg=document.getElementById("ggal"); gg.parentNode.insertBefore(gb,gg);
     ukSync();
@@ -2437,6 +2654,7 @@ function izinAkun() {
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden") simpanSantri();});
   window.addEventListener("pagehide",simpanSantri);
   function show(){
+    if(S.v==="dev"&&!(window.CLOUD&&CLOUD.owner())){S={y:S.y,m:S.m,d:null}; try{history.replaceState(null,"",urlFor(S.y+"/"+S.m));}catch(e){}}
     var prR=!panel.hidden?panel.getBoundingClientRect():null, prD=curDay, prC=null;
     if(prR&&!S.d){try{prC=panel.cloneNode(true);stripIds(prC);}catch(e){prC=null;}}
     if(!santriEl.hidden) simpanSantri();
@@ -2446,19 +2664,22 @@ function izinAkun() {
     renderMonth();
     renderMem();
     warm();
-    var on=!!S.d, sv=S.v==="santri", gv=S.v==="galeri", mv=S.v==="momen", sl=sv&&!S.s, sd=sv&&!!S.s;
+    var on=!!S.d, sv=S.v==="santri", gv=S.v==="galeri", dv=S.v==="dev", mv=S.v==="momen", ml=mv&&!S.s, md=mv&&!!S.s, sl=sv&&!S.s, sd=sv&&!!S.s;
     if(panel.hidden) panel.style.animation=""; /* hapus penahan animasi sebelum panel ditampilkan lagi */
-    home.hidden=on||sv||gv||mv; panel.hidden=!on;
-    santriEl.hidden=!sl; sdetEl.hidden=!sd; galeriEl.hidden=!gv; momenEl.hidden=!mv;
-    tabsEl.hidden=!(sl||(!on&&!sv));
-    tabAlbum.setAttribute("aria-selected",(sv||gv||mv)?"false":"true");
+    home.hidden=on||sv||gv||mv||dv; panel.hidden=!on;
+    santriEl.hidden=!sl; sdetEl.hidden=!sd; galeriEl.hidden=!gv; momenEl.hidden=!ml; mdetEl.hidden=!md; devEl.hidden=!dv;
+    tabsEl.hidden=!(sl||(!on&&!sv&&!md));
+    tabAlbum.setAttribute("aria-selected",(sv||gv||mv||dv)?"false":"true");
     tabSantri.setAttribute("aria-selected",sv?"true":"false");
     tabGaleri.setAttribute("aria-selected",gv?"true":"false");
     tabMomen.setAttribute("aria-selected",mv?"true":"false");
+    if(tabDev) tabDev.setAttribute("aria-selected",dv?"true":"false");
     if(window.CLOUD) CLOUD.santri();
     if(sl) renderSantri();
     if(gv){document.title="Album SWTQIS-10 · Galeri";renderGaleri();}
-    if(mv){document.title="Album SWTQIS-10 · Momen";}
+    if(ml){document.title="Album SWTQIS-10 \u00b7 Momen";renderMomenList();}
+    if(md){renderMomenDetail(S.s);}
+    if(dv){document.title="Album SWTQIS-10 · File developer"; if(window.CLOUD&&CLOUD.dev) CLOUD.dev();}
     if(sd){
       var nm=santriBySlug(S.s);
       document.getElementById("sdnama").textContent=nm;
@@ -2575,7 +2796,7 @@ function izinAkun() {
 
   /* ===== Google Drive lewat Apps Script: foto/video disimpan di Drive pemilik, pengunjung hanya melihat lewat app ===== */
   (function(){
-    var CUS=(window.CLOUD_URLS&&window.CLOUD_URLS.length?window.CLOUD_URLS:[window.CLOUD_URL||""]).filter(Boolean), CU=CUS[0]||"", ow={}, cm={}, cp={}, cb={}, cq=[], crun=0, cvid={}, clink={}, bq=[], PIN="", rt=0, priv={}, PCODE={}, PV={}, PVP={}, ACC={}, ACCT={}, KODE={}, KODEP=null;
+    var CUS=(window.CLOUD_URLS&&window.CLOUD_URLS.length?window.CLOUD_URLS:[window.CLOUD_URL||""]).filter(Boolean), CU=CUS[0]||"", ow={}, cm={}, cp={}, cb={}, cq=[], crun=0, cvid={}, clink={}, bq=[], PIN="", rt=0, priv={}, PCODE={}, PV={}, MV={}, PVP={}, ACC={}, ACCT={}, KODE={}, KODEP=null;
     var PH="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
     try{PIN=localStorage.getItem("album-pin")||"";}catch(e){}
     function cget(q,id){var u=CUS[ow[id]||0]||CU;return fetch(u+"?"+q).then(function(r){return r.json();});}
@@ -2703,9 +2924,10 @@ function izinAkun() {
     function refresh(){
       if(!lb.hidden) return;
       try{
-        santriMap=build();
+        santriMap=build(); momenMap=buildMomen();
         if(S.v==="santri"){if(S.s) renderSantriDetail(S.s); else renderSantri(); return;}
         if(S.v==="galeri"){renderGaleri(); return;}
+        if(S.v==="momen"){if(S.s) renderMomenDetail(S.s); else renderMomenList(); return;}
         panes[0].k=panes[1].k=null;
         if(S.d){list();document.getElementById("daddr").textContent=all(id(S.y,S.m,S.d)).length+" foto";}
         renderMonth();
@@ -3162,14 +3384,15 @@ function izinAkun() {
       });
     }
     function uOne(t){
-      var f=t.f,k=t.k,sl=t.sl||null,vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type), pend=null;
-      var box=sl?(PV[sl]=PV[sl]||{}):cm;
+      var f=t.f,k=t.k,sl=t.sl||null,mo=t.mo||null,vid=/^video\//.test(f.type), asli=vid||/^image\/(jpeg|png|webp|gif)$/.test(f.type), pend=null;
+      var box=sl?(PV[sl]=PV[sl]||{}):(mo?(MV[mo]=MV[mo]||{}):cm);
       return (asli?Promise.resolve(f):toJpg(f)).then(function(bl){
         return (vid?poster(f):mkThumb(bl)).then(function(th){
           pend=pendingAdd(k,vid,bl,th,sl?[sl]:t.tags,box,sl);
           return Promise.all([b64(bl),th?b64(th):""]).then(function(d){
             var m=asli?f.type:"image/jpeg";
             if(sl) return kirimPriv({a:"sup",pin:PIN,n:sl,k:k,m:m,d:d[0],p:d[1]},sl,0);
+            if(mo) return kirim({a:"mup",pin:PIN,n:mo,k:k,m:m,d:d[0],p:d[1]});
             return kirim({a:"up",pin:PIN,k:k,m:m,d:d[0],p:d[1],s:t.tags});
           });
         });
@@ -3210,7 +3433,7 @@ function izinAkun() {
     /* opt = {sl:slug santri, k:tanggal} untuk unggahan khusus halaman santri */
     function upload(files,tags,opt){
       var k=opt?opt.k:id(S.y,S.m,S.d);
-      [].slice.call(files).forEach(function(f){uq.push({f:f,k:k,tags:tags||[],sl:opt?opt.sl:null});uTotal++;});
+      [].slice.call(files).forEach(function(f){uq.push({f:f,k:k,tags:tags||[],sl:opt?opt.sl:null,mo:opt?opt.mo:null});uTotal++;});
       uLabel(); uJalan();
     }
     /* ===== Tambah video link (pemilik): link dikirim ke server dan tidak pernah ditampilkan lagi ===== */
@@ -3244,11 +3467,12 @@ function izinAkun() {
         u.o.remove(); done(v,withDate?di.value:null);
       }]]);
     }
-    function kirimLink(raw,k,tags,sl,btn){
+    function kirimLink(raw,k,tags,sl,btn,mo){
       var t0=btn.textContent; btn.disabled=true; btn.textContent="Menyimpan link…";
       return posterLink(platNama(raw)).then(b64).then(function(pd){
         var o={a:"lnk",pin:PIN,k:k,u:raw,p:pd,h:location.hostname};
         if(sl){o.n=sl; return kirimPriv(o,sl,0);}
+        if(mo){o.mo=mo; return kirim(o);}
         o.s=tags||[]; return kirim(o);
       }).then(function(j){
         if(!j||!j.ok){
@@ -3257,7 +3481,7 @@ function izinAkun() {
           else alert((j&&j.tolak?"Link ditolak: ":"Gagal menyimpan link: ")+((j&&j.e)||""));
           return;
         }
-        var box=sl?(PV[sl]=PV[sl]||{}):cm;
+        var box=sl?(PV[sl]=PV[sl]||{}):(mo?(MV[mo]=MV[mo]||{}):cm);
         (box[k]=box[k]||[]).push(j.f); ow[j.f.i]=j.ai; if(j.f.p) ow[j.f.p]=j.ai;
         if(sl){priv[j.f.i]=sl; if(j.f.p) priv[j.f.p]=sl;}
         refresh();
@@ -3582,6 +3806,140 @@ function izinAkun() {
         }).catch(function(){alert("Gagal terhubung.");});
       },f.s||[]);
     }
+    /* ===== Momen: data per momen dan per tanggal (MV) -> alamat gambar untuk tampilan (momenMap) ===== */
+    function buildMomen(){
+      var m={}, mvw=S.v==="momen";
+      Object.keys(MOMEN).forEach(function(s){
+        if(typeof MOMEN[s]!=="string"||!MOMEN[s]) return;
+        var bx=MV[s]||{}, e={tanggal:{},f:{},total:0,cover:null,last:""};
+        Object.keys(bx).sort().forEach(function(k){
+          var arr=bx[k]; if(!arr||!arr.length) return;
+          e.tanggal[k]=arr.map(function(f){return ((f.t==="v"||f.t==="l")&&!f.p)?phVid(f):pu(f,mvw&&S.s===s);});
+          e.f[k]=arr; e.total+=arr.length; e.last=k;
+        });
+        var fk=Object.keys(e.tanggal)[0];
+        if(fk){var f0=e.f[fk][0]; e.cover=((f0.t==="v"||f0.t==="l")&&!f0.p)?null:pu(f0,mvw&&!S.s);}
+        m[s]=e;
+      });
+      return m;
+    }
+    function momenUi(){
+      var o=!!CU&&!!window.CLOUD_OWNER, det=S.v==="momen"&&!!S.s, el=function(x){return document.getElementById(x);};
+      el("mbuat").hidden=!o||det;
+      ["mupl","mlink","mren","mdel"].forEach(function(x){el(x).hidden=!o;});
+    }
+    function namaMomenOk(v,selfSl){
+      var nm=String(v||"").replace(/\s+/g," ").trim();
+      if(nm.length<2||nm.length>60) return {e:"Nama harus 2-60 karakter."};
+      var s=slugRaw(nm).slice(0,60).replace(/-$/,"");
+      if(!s) return {e:"Nama harus memakai huruf atau angka latin (a-z, 0-9)."};
+      var ks=Object.keys(MOMEN);
+      for(var i=0;i<ks.length;i++){
+        if(ks[i]!==selfSl&&(ks[i]===s||String(MOMEN[ks[i]]).toLowerCase()===nm.toLowerCase())) return {e:"Momen dengan nama itu sudah ada."};
+      }
+      return {n:nm,s:s};
+    }
+    function galatMomen(j){
+      if(j&&j.e==="aksi tidak dikenal") alert("Perbarui Code.gs di Apps Script (semua akun) dan deploy ulang dulu agar momen bisa dipakai.");
+      else bad(j);
+    }
+    function buatMomen(){
+      if(!ensurePin()) return;
+      var u=overlay(380), h=document.createElement("b"), ni=fld(document.createElement("input"));
+      h.textContent="Buat momen";
+      ni.type="text"; ni.placeholder="Nama momen, mis. Rihlah Madinah"; ni.autocomplete="off"; ni.setAttribute("aria-label","Nama momen");
+      u.c.appendChild(h); u.c.appendChild(ni);
+      btnRow(u.c,[["Batal",function(){u.o.remove();}],["Buat",function(b){
+        var r=namaMomenOk(ni.value,null); if(r.e){alert(r.e);return;}
+        b.disabled=true; b.textContent="Menyimpan\u2026";
+        cpost({a:"mn",pin:PIN,n:r.s,v:r.n},0).then(function(j){
+          b.disabled=false; b.textContent="Buat";
+          if(!j||!j.ok){galatMomen(j);return;}
+          MOMEN[r.s]=r.n; u.o.remove(); goMomen(r.s); segarCacheDaftar(); toast("Momen dibuat");
+        }).catch(function(){b.disabled=false; b.textContent="Buat"; alert("Gagal terhubung.");});
+      }]]);
+      ni.addEventListener("keydown",function(e){if(e.key==="Enter") u.c.querySelectorAll("button")[1].click();});
+      ni.focus();
+    }
+    function ubahNamaMomen(sl){
+      var cur=MOMEN[sl]; if(!cur||!ensurePin()) return;
+      var v=prompt("Nama baru untuk "+cur+":",cur); if(v===null) return;
+      var r=namaMomenOk(v,sl); if(r.e){alert(r.e);return;}
+      if(r.n===cur) return;
+      cpost({a:"mn",pin:PIN,n:sl,v:r.n},0).then(function(j){
+        if(!j||!j.ok){galatMomen(j);return;}
+        MOMEN[sl]=r.n; refresh(); segarCacheDaftar(); toast("Nama diubah");
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    function hapusMomen(sl){
+      var cur=MOMEN[sl]; if(!cur||!ensurePin()) return;
+      if(!confirm("Hapus momen "+cur+" dari daftar?\n\nFoto dan video di Drive TIDAK dihapus, tetapi tidak akan tampil lagi.")) return;
+      cpost({a:"md",pin:PIN,n:sl},0).then(function(j){
+        if(!j||!j.ok){galatMomen(j);return;}
+        delete MOMEN[sl]; delete MV[sl];
+        try{history.replaceState(null,"",urlFor("momen"));}catch(e){}
+        S={y:S.y,m:S.m,d:null,v:"momen",s:null}; show();
+        segarCacheDaftar(); toast(cur+" dihapus dari daftar");
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    function delMomen(sl,k,f){
+      if(!f) return;
+      if(/^tmp_/.test(f.i)){alert("Masih mengunggah, tunggu sebentar.");return;}
+      if(!confirm("Hapus dari Drive?")) return;
+      cpost({a:"del",pin:PIN,i:f.i},ow[f.i]||0).then(function(j){
+        if(!j||!j.ok) return bad(j);
+        var a=(MV[sl]||{})[k]||[], x=a.indexOf(f); if(x>=0) a.splice(x,1); if(!a.length&&MV[sl]) delete MV[sl][k];
+        refresh();
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    /* ===== Tab File developer (khusus pemilik): Code.gs dibagi 2 bagian, index.html ===== */
+    var DEV={p1:"",p2:"",all:"",html:null,loading:false};
+    function gateDev(ok){
+      if(PIN){ok();return;}
+      var p=prompt("Masukkan PIN pemilik"); if(!p) return;
+      cpost({a:"cek",pin:p},0).then(function(j){
+        if(j&&j.ok){PIN=p; try{localStorage.setItem("album-pin",p);}catch(e){} ok();}
+        else alert("PIN salah.");
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    function salinTeks(t,fn){
+      function fb(){
+        window.__izinSalin=1;
+        var ta=document.createElement("textarea"), r=false;
+        ta.value=t; ta.setAttribute("readonly","");
+        ta.style.cssText="position:fixed;left:0;top:0;opacity:0;-webkit-user-select:text;user-select:text";
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try{ta.setSelectionRange(0,t.length);}catch(e){}
+        try{r=document.execCommand("copy");}catch(e){}
+        ta.remove(); window.__izinSalin=0; return r;
+      }
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){fn(true);},function(){fn(fb());});
+      else fn(fb());
+    }
+    function kb(t){return (t.length/1024).toFixed(0)+" KB";}
+    function renderDev(){
+      var el=document.getElementById("kodegs"); if(!el) return;
+      if(!DEV.all){
+        var full=el.textContent, mk="// ===== VIDEO LINK =====", i=full.indexOf(mk);
+        if(i<0) i=Math.floor(full.length/2);
+        DEV.all=full; DEV.p1=full.slice(0,i).replace(/\s+$/,"")+"\n"; DEV.p2=full.slice(i);
+        document.getElementById("dvp1").value=DEV.p1; document.getElementById("dvp2").value=DEV.p2;
+        document.getElementById("dvn1").textContent=DEV.p1.split("\n").length+" baris";
+        document.getElementById("dvn2").textContent=DEV.p2.split("\n").length+" baris";
+      }
+      var inf=document.getElementById("dvhinfo");
+      if(DEV.html){inf.textContent="Siap disalin atau diunduh ("+kb(DEV.html)+")."; return;}
+      if(DEV.loading) return;
+      DEV.loading=true; inf.textContent="Memuat index.html…";
+      var url=pathMode?base()+"index.html":location.pathname;
+      function ambil(o){return fetch(url,o).then(function(r){if(!r.ok) throw new Error("http "+r.status); return r.text();});}
+      ambil({cache:"no-cache"}).catch(function(){return ambil({});}).then(function(t){
+        DEV.html=t; DEV.loading=false;
+        if(S.v==="dev") inf.textContent="Siap disalin atau diunduh ("+kb(t)+").";
+      }).catch(function(){
+        DEV.loading=false; inf.textContent="Gagal memuat index.html. Buka tab ini lagi untuk mencoba.";
+      });
+    }
     function ids(k){return (cm[k]||[]).map(function(f){return f.i;});}
     /* simpan sampul tanggal di akun pertama (Code.gs aksi "cov"); gagal = tampilan tetap seperti semula */
     function setCover(k,v){
@@ -3593,7 +3951,7 @@ function izinAkun() {
         else bad(j);
       }).catch(function(){alert("Gagal terhubung.");});
     }
-    window.CLOUD={pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s;}};
+    window.CLOUD={gate:gateDev,dev:renderDev,delMomen:delMomen,pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s; momenMap=buildMomen(); momenUi();}};
     if(!CU) return;
     /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
     (function(){
@@ -3619,32 +3977,30 @@ function izinAkun() {
       });
     })();
     tb.hidden=!window.CLOUD_OWNER;
-    /* unduh berkas aplikasi (hanya mode pemilik): index.html diambil dari alamat aplikasi sendiri, Code.gs dari salinan di halaman ini */
+    /* tombol di tab File developer (hanya pemilik): salin Code.gs per bagian atau semua, salin/unduh index.html */
     (function(){
-      var own=document.getElementById("own"), bh=document.getElementById("dlhtml"), bg=document.getElementById("dlgs");
-      if(!own||!bh||!bg) return;
-      own.hidden=!window.CLOUD_OWNER;
+      function bind(id,fn){var e=document.getElementById(id); if(e) e.addEventListener("click",fn);}
+      function hasil(ok){toast(ok?"Disalin":"Gagal menyalin. Coba lagi.");}
       function simpanBerkas(nama,blob){
         var a=document.createElement("a"), u=URL.createObjectURL(blob);
         a.href=u; a.download=nama; a.style.display="none"; document.body.appendChild(a); a.click();
         setTimeout(function(){URL.revokeObjectURL(u);a.remove();},2000);
       }
-      bg.addEventListener("click",function(){
-        var el=document.getElementById("kodegs"), t=el?el.textContent:"";
-        if(!t){toast("Code.gs tidak ditemukan.");return;}
-        simpanBerkas("Code.gs",new Blob([t],{type:"application/octet-stream"}));
-        toast("Code.gs diunduh");
+      bind("dvc1",function(){renderDev(); salinTeks(DEV.p1,hasil);});
+      bind("dvc2",function(){renderDev(); salinTeks(DEV.p2,hasil);});
+      bind("dvcall",function(){renderDev(); salinTeks(DEV.all,hasil);});
+      bind("dvdlgs",function(){
+        renderDev();
+        if(!DEV.all){toast("Code.gs tidak ditemukan.");return;}
+        simpanBerkas("Code.gs",new Blob([DEV.all],{type:"application/octet-stream"})); toast("Code.gs diunduh");
       });
-      bh.addEventListener("click",function(){
-        var url=pathMode?base()+"index.html":location.pathname, lab=bh.querySelector("span"), t0=lab.textContent;
-        bh.disabled=true; lab.textContent="Mengunduh\u2026";
-        function ambil(o){return fetch(url,o).then(function(r){if(!r.ok) throw new Error("http "+r.status); return r.blob();});}
-        ambil({cache:"no-cache"}).catch(function(){return ambil({});}).then(function(b){
-          simpanBerkas("index.html",new Blob([b],{type:"text/html"}));
-          toast("index.html diunduh");
-        }).catch(function(){
-          toast("Gagal mengunduh index.html. Periksa koneksi lalu coba lagi.");
-        }).then(function(){bh.disabled=false;lab.textContent=t0;});
+      bind("dvhc",function(){
+        if(!DEV.html){renderDev(); toast("index.html masih dimuat, coba lagi sebentar."); return;}
+        salinTeks(DEV.html,hasil);
+      });
+      bind("dvhd",function(){
+        if(!DEV.html){renderDev(); toast("index.html masih dimuat, coba lagi sebentar."); return;}
+        simpanBerkas("index.html",new Blob([DEV.html],{type:"text/html"})); toast("index.html diunduh");
       });
     })();
     var tl=document.getElementById("tlink"), slinkB=document.getElementById("slink");
@@ -3672,6 +4028,17 @@ function izinAkun() {
     if(stambahB) stambahB.addEventListener("click",tambahSantri);
     if(srenB) srenB.addEventListener("click",function(){if(S.s) ubahNamaSantri(S.s);});
     if(sdelB) sdelB.addEventListener("click",function(){if(S.s) hapusSantri(S.s);});
+    document.getElementById("mbuat").addEventListener("click",buatMomen);
+    document.getElementById("mren").addEventListener("click",function(){if(S.v==="momen"&&S.s) ubahNamaMomen(S.s);});
+    document.getElementById("mdel").addEventListener("click",function(){if(S.v==="momen"&&S.s) hapusMomen(S.s);});
+    document.getElementById("mupl").addEventListener("click",function(){
+      var sl=S.s; if(S.v!=="momen"||!sl||!ensurePin()) return;
+      pickTanggal(function(files,date){upload(files,[],{mo:sl,k:date});});
+    });
+    document.getElementById("mlink").addEventListener("click",function(){
+      var sl=S.s, btn=document.getElementById("mlink"); if(S.v!=="momen"||!sl||!ensurePin()) return;
+      dialogLink(true,function(raw,date){kirimLink(raw,date,[],null,btn,sl);});
+    });
     /* diagnosa: periksa tiap akun (versi Code.gs, kode santri, file khusus di Drive, dan apakah daftar bisa dibaca) */
     sdiagB.addEventListener("click",function(){
       var sl=S.s; if(!sl||!ensurePin()) return;
@@ -3745,19 +4112,26 @@ function izinAkun() {
     });
     /* Daftar tampil seketika dari cache perangkat (stale-while-revalidate), lalu diperbarui dari server */
     function applyList(rs){
-      cm={};cp={};
+      cm={};cp={};MV={};
       rs.forEach(function(r){
         if(!r||!r.j) return; var j=r.j;
         Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
         if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
-        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; }
+        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; }
+        Object.keys(j.mf||{}).forEach(function(sl){
+          var bx=MV[sl]=MV[sl]||{};
+          Object.keys(j.mf[sl]).forEach(function(d){var ar=bx[d]=bx[d]||[]; j.mf[sl][d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;ar.push(f);});});
+        });
       });
       rebuildSantri();
       var pS=false;
       if(S.v==="santri"){
         if(!S.s){var p2=parse(); if(p2.v==="santri"&&p2.s){S=p2;pS=true;}}
         else if(!santriBySlug(S.s)){S={y:S.y,m:S.m,d:null,v:"santri",s:null};pS=true;}
+      }
+      if(S.v==="momen"&&S.s&&liveDone&&!MOMEN[S.s]){
+        S={y:S.y,m:S.m,d:null,v:"momen",s:null};pS=true;
       }
       if(pS) show(); else refresh();
     }
@@ -3807,7 +4181,7 @@ document.addEventListener("error",function(e){
   setTimeout(function(){ if(t.src===s0) p.classList.add("gagal"); },0);
 },true);
 ["copy","cut","contextmenu","selectstart","dragstart"].forEach(function(n){
-  document.addEventListener(n,function(e){e.preventDefault();});
+  document.addEventListener(n,function(e){if(window.__izinSalin) return; e.preventDefault();});
 });
 document.addEventListener("keydown",function(e){
   if((e.ctrlKey||e.metaKey)&&/^[acxsup]$/i.test(e.key))e.preventDefault();
