@@ -6,6 +6,9 @@
 <title>Album SWTQIS-10</title>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://www.youtube-nocookie.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.youtube.com">
+<link rel="dns-prefetch" href="https://i.ytimg.com">
 <script>
 window.CLOUD_URL="https://script.google.com/macros/s/AKfycbwLVQ9nvKiSYWDsPYsu05sMELf_TQ4HF_fI-zD77HHaKtz6Wi8nUEHoZrCyvP9LC6yG/exec";/* tempel alamat Web App Apps Script di sini */
 window.CLOUD_URLS=[
@@ -326,6 +329,11 @@ button.b.alt.emas.ikon[hidden]{display:none}
 #lbplay[hidden]{display:none}
 #lbplay:focus-visible{outline:3px solid #e2c077;outline-offset:3px}
 .sgal .st i.pb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.95rem;padding-left:2px;pointer-events:none}
+.sant .stat{display:inline-flex;align-items:stretch;margin:6px 0 4px;padding:8px 4px;border:1px solid var(--emas-garis);border-radius:18px;background:color-mix(in srgb,var(--surface) 70%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.sant .stat .si{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:76px;padding:0 14px}
+.sant .stat .si+.si{border-left:1px solid color-mix(in srgb,var(--emas-garis) 55%,transparent)}
+.sant .stat b{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.5rem;line-height:1;color:var(--ink)}
+.sant .stat span{font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--emas)}
 </style>
 </head>
 <body>
@@ -380,7 +388,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     <button class="b alt" id="slink" type="button" hidden>Tambah link video</button>
     <button class="b alt" id="sdiag" type="button" hidden>Cek unggahan khusus</button>
   </div>
-  <p class="addr" id="sdinfo"></p>
+  <div class="addr" id="sdinfo"></div>
   <div class="sgal" id="sgal"></div>
 </section>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Menu utama">
@@ -1096,6 +1104,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       var p=new Image(); p.onload=function(){fullDone[full]=1; if(lbItems[lbIdx]===full) lbimg.src=full;}; p.src=full;
     }else lbimg.src=full;
     if(window.CLOUD) CLOUD.big(full,function(b){if(lbItems[lbIdx]===full) lbimg.src=b;});
+    if(window.CLOUD&&CLOUD.pre) CLOUD.pre(full);
     lbimg.alt="Foto "+(lbIdx+1);
     lbcnt.textContent=lbItems.length>1?(lbIdx+1)+" / "+lbItems.length:"";
     lbSantri();
@@ -1498,7 +1507,16 @@ button.b.alt.emas.ikon[hidden]{display:none}
     var tg=(info&&info.tanggal)||{}, keys=Object.keys(tg).sort(), total=0, lastYM="";
     box.innerHTML="";
     var totV=0; keys.forEach(function(k){total+=tg[k].length; tg[k].forEach(function(f){if(window.CLOUD&&CLOUD.isVideo(f)) totV++;});});
-    inf.textContent=total?(total>totV?(total-totV)+" foto"+(totV?" · "+totV+" video":""):totV+" video")+" · "+keys.length+" tanggal":"";
+    inf.textContent="";
+    if(total){
+      var st=document.createElement("div"); st.className="stat"; st.setAttribute("role","group"); st.setAttribute("aria-label","Jumlah file");
+      [[total-totV,"Foto"],[totV,"Video"],[keys.length,"Tanggal"]].forEach(function(x){
+        if(!x[0]&&x[1]!=="Tanggal") return;
+        var it=document.createElement("div"), n=document.createElement("b"), l=document.createElement("span");
+        it.className="si"; n.textContent=x[0]; l.textContent=x[1]; it.appendChild(n); it.appendChild(l); st.appendChild(it);
+      });
+      inf.appendChild(st);
+    }
     if(!keys.length){
       box.innerHTML='<div class="kosong"><p>Belum ada foto untuk santri ini.</p></div>';
       return;
@@ -1526,13 +1544,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         im.alt=""; im.loading="lazy"; im.draggable=false; thumbs[i]=im;
         if(t!==src) im.addEventListener("error",function f(){im.removeEventListener("error",f);im.src=src;});
         im.src=t;
-        b.addEventListener("click",function(){
-          if(isV[i]){CLOUD.play(raw[i]);return;}
-          if(!nv){openLb(items,i,thumbs);return;}
-          /* ada video di tanggal ini: penampil foto hanya berisi foto */
-          var li=[],lt=[],lx=0; items.forEach(function(s,j){if(!isV[j]){if(j===i) lx=li.length; li.push(s); lt.push(thumbs[j]);}});
-          openLb(li,lx,lt);
-        });
+        b.addEventListener("click",function(){openLb(items,i,thumbs);});
         b.appendChild(im);
         if(window.CLOUD&&CLOUD.owner()&&CLOUD.privAt){
           var pf=CLOUD.privAt(sl,k,i,raw.length);
@@ -1906,14 +1918,19 @@ button.b.alt.emas.ikon[hidden]{display:none}
       }).catch(function(e){if(rFail>=9||t>=1) throw e; return rangeOne(id,o,t+1);});
     }
     function chunked(id,onp){
+      /* potongan kedua diminta bersamaan dengan yang pertama (tanpa menunggu ukuran file diketahui) */
+      var p1=rangeOne(id,CH,1).then(function(j){return j;},function(){return null;});
       return rangeOne(id,0,0).then(function(j0){
         var total=j0.t, n=Math.max(1,Math.ceil(total/CH)), m=j0.m, parts=new Array(n); parts[0]=b2a(j0);
         if(onp) onp(1/n);
         if(n===1) return new Blob(parts,{type:m});
+        return p1.then(function(j1){
+        var next=1, done=1;
+        if(j1&&n>1&&typeof j1.t==="number"&&j1.t===total){parts[1]=b2a(j1); next=2; done=2; if(onp) onp(done/n); if(done>=n) return new Blob(parts,{type:m});}
         return new Promise(function(ok,no){
-          var next=1, run=0, done=1, dead=false;
+          var run=0, dead=false;
           function pump2(){
-            while(!dead&&run<4&&next<n){
+            while(!dead&&run<6&&next<n){
               (function(i){
                 run++;
                 rangeOne(id,i*CH,0).then(function(j){
@@ -1924,6 +1941,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
             }
           }
           pump2();
+        });
         });
       });
     }
@@ -1992,10 +2010,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
     }
     /* antrean utama (yang terlihat di layar) didahulukan; bq = unduhan latar belakang berprioritas rendah */
     function pump(){
-      while(crun<5){
+      while(crun<6){
         var first=null, fromB=false;
         if(cq.length) first=cq.shift();
-        else if(crun<2){
+        else if(crun<4){
           while(bq.length){var x0=bq.shift(); if(cb[x0]===undefined){cb[x0]=null; first=x0; fromB=true; break;}}
         }
         if(first===null) break;
@@ -2041,10 +2059,40 @@ button.b.alt.emas.ikon[hidden]{display:none}
       var v=null; x.onclick=function(){if(v)v.pause();o.remove();};
       function go(src){o.firstChild.textContent="";v=document.createElement("video");v.controls=true;v.playsInline=true;v.autoplay=true;v.src=src;v.style.cssText="max-width:100%;max-height:100%";o.insertBefore(v,x);}
       if(cb["v"+vid]) go(cb["v"+vid]);
-      else cacheGet(vid).then(function(b){
+      else{
+        function prog(f){if(o.isConnected&&!v&&o.firstChild) o.firstChild.textContent="Memuat video\u2026 "+Math.round(f*100)+"%";}
+        if(vprog[vid]) prog(vprog[vid]);
+        (vlis[vid]=vlis[vid]||[]).push(prog);
+        vfetch(vid).then(function(b){cb["v"+vid]=URL.createObjectURL(b);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){if(o.isConnected&&o.firstChild) o.firstChild.textContent="Gagal memuat video";});
+      }
+    }
+    /* unduhan video dipakai bersama: bisa dimulai saat thumbnail tampil di penampil, sehingga siap saat tombol play ditekan */
+    var vprom={}, vprog={}, vlis={}, lcache={};
+    function vfetch(vid){
+      if(vprom[vid]) return vprom[vid];
+      vprom[vid]=cacheGet(vid).then(function(b){
         if(b) return b;
-        return getFull(vid,function(f){if(o.isConnected&&!v&&o.firstChild) o.firstChild.textContent="Memuat video… "+Math.round(f*100)+"%";}).then(function(b2){cachePut(vid,b2,b2.type);return b2;});
-      }).then(function(b){cb["v"+vid]=URL.createObjectURL(b);if(o.isConnected)go(cb["v"+vid]);}).catch(function(){if(o.isConnected&&o.firstChild) o.firstChild.textContent="Gagal memuat video";});
+        return getFull(vid,function(f){vprog[vid]=f;(vlis[vid]||[]).forEach(function(h){h(f);});}).then(function(b2){cachePut(vid,b2,b2.type);return b2;});
+      }).catch(function(e){delete vprom[vid];throw e;});
+      return vprom[vid];
+    }
+    function lpReq(vid){var s=priv[vid]; return cpost({a:"lp",i:vid,n:s||"",c:s?(PCODE[s]||""):""},ow[vid]||0);}
+    function lpGet(vid){
+      var e=lcache[vid]; delete lcache[vid];
+      if(e&&Date.now()-e.t<60000) return e.p.then(function(j){return (j&&j.ok)?j:lpReq(vid);},function(){return lpReq(vid);});
+      return lpReq(vid);
+    }
+    /* siapkan video/link lebih awal (dipanggil penampil saat thumbnail video tampil); hemat data bila koneksi lambat atau mode hemat */
+    function pre(u){
+      var vid=cvid[u]; if(!vid) return;
+      var c=navigator.connection||{};
+      if(clink[vid]){
+        var e=lcache[vid]; if(e&&Date.now()-e.t<60000) return;
+        lcache[vid]={t:Date.now(),p:lpReq(vid).catch(function(){return null;})};
+        return;
+      }
+      if(c.saveData||(c.effectiveType&&c.effectiveType!=="4g")||cb["v"+vid]||vprom[vid]) return;
+      vfetch(vid).then(function(b){cb["v"+vid]=URL.createObjectURL(b);}).catch(function(){});
     }
     /* ===== Video link: alamat asli hanya ada di server (Code.gs). Daftar tidak membawa alamat; alamat baru diminta
        lewat POST saat diputar, dipasang ke pemutar tanpa pernah ditampilkan, dan pemutar dibongkar saat ditutup ===== */
@@ -2069,7 +2117,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       document.addEventListener("keydown",onkey,true);
       x.onclick=tutup;
       var s=priv[vid];
-      cpost({a:"lp",i:vid,n:s||"",c:s?(PCODE[s]||""):""},ow[vid]||0).then(function(j){
+      lpGet(vid).then(function(j){
         if(closed) return;
         if(!j||!j.ok){tx.textContent=(j&&j.e==="aksi tidak dikenal")?"Perbarui Code.gs (versi 5) dan deploy ulang dulu.":"Video tidak bisa diputar.";return;}
         tx.remove();
@@ -2150,7 +2198,32 @@ button.b.alt.emas.ikon[hidden]{display:none}
         bq.textContent=(want==="auto")?"Auto":(LBL[qNow]||LBL[want]||"Auto");
       }
       function toggle(){cmd((st.s===1||st.s===3)?"pauseVideo":"playVideo");}
-      cover.addEventListener("click",toggle); bp.addEventListener("click",toggle);
+      bp.addEventListener("click",toggle);
+      /* ketuk dua kali di sepertiga kiri/kanan: mundur/maju 10 detik. Ketukan pertama di sisi tidak melakukan apa pun.
+         Setelah ketukan ganda, ketukan berikutnya di sisi yang sama (dalam 0,6 detik) langsung lompat lagi. Bagian tengah: putar/jeda. */
+      var lastT=0, lastS=0, chainUntil=0, accum=0, fbT=0, fb=document.createElement("div");
+      fb.style.cssText="position:absolute;top:0;bottom:0;width:34%;z-index:2;display:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#fff;font:700 .95rem system-ui,sans-serif;text-align:center;pointer-events:none;background:rgba(255,255,255,.16);text-shadow:0 1px 4px rgba(0,0,0,.6)";
+      function fbShow(side){
+        accum+=10;
+        fb.style.left=side<0?"0":"auto"; fb.style.right=side>0?"0":"auto";
+        fb.style.borderRadius=side<0?"0 60% 60% 0 / 0 50% 50% 0":"60% 0 0 60% / 50% 0 0 50%";
+        fb.innerHTML=""; var a=document.createElement("span"), b=document.createElement("span");
+        a.style.fontSize="1.6rem"; a.textContent=side<0?"\u23EA":"\u23E9"; b.textContent=accum+" detik";
+        fb.appendChild(a); fb.appendChild(b); fb.style.display="flex";
+        clearTimeout(fbT); fbT=setTimeout(function(){fb.style.display="none";accum=0;},600);
+      }
+      function lompat(side){
+        if(!(st.d>0)) return;
+        var t=Math.max(0,Math.min(st.d,st.t+side*10));
+        cmd("seekTo",[t,true]); st.t=t; upd(); fbShow(side);
+      }
+      cover.addEventListener("click",function(e){
+        var r=cover.getBoundingClientRect(), x=r.width?(e.clientX-r.left)/r.width:0.5, side=x<0.33?-1:(x>0.67?1:0), now=Date.now();
+        if(side===0){lastT=0;chainUntil=0;toggle();return;}
+        if(lastS===side&&(now<chainUntil||now-lastT<300)){lompat(side);chainUntil=now+600;lastT=now;}
+        else{lastS=side;lastT=now;chainUntil=0;}
+      });
+      cleanup.push(function(){clearTimeout(fbT);});
       bm.addEventListener("click",function(){cmd(st.m?"unMute":"mute"); st.m=!st.m; upd();});
       bf.addEventListener("click",function(){
         var d=document.fullscreenElement||document.webkitFullscreenElement;
@@ -2215,7 +2288,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       }
       bq.addEventListener("click",qBuka);
       cleanup.push(qTutup);
-      box.appendChild(cover); box.appendChild(bar); upd();
+      box.appendChild(cover); box.appendChild(fb); box.appendChild(bar); upd();
       function onmsg(e){
         if(e.source!==fr.contentWindow) return;
         var d=e.data; if(typeof d==="string"){try{d=JSON.parse(d);}catch(x){return;}}
@@ -2696,7 +2769,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         else bad(j);
       }).catch(function(){alert("Gagal terhubung.");});
     }
-    window.CLOUD={big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER;}};
+    window.CLOUD={pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER;}};
     if(!CU) return;
     /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
     (function(){
