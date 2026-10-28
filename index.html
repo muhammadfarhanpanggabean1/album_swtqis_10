@@ -685,6 +685,15 @@ function momen_() {
   return n;
 }
 
+// Sampul momen pilihan pemilik: MC_slug = id file kalender
+function momenCov_() {
+  const c = {};
+  try {
+    const ap = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(ap).forEach(function (k) { if (k.indexOf('MC_') === 0) c[k.slice(3)] = ap[k]; });
+  } catch (e) {}
+  return c;
+}
 function mi_() {
   const o = {}, r = {};
   try {
@@ -796,7 +805,7 @@ function doGet(e) {
       const p = {};
       Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
       const sg = santri_();
-      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_() });
+      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_(), mc: momenCov_() });
       cput_('L', js, 600);
       return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1248,7 +1257,20 @@ function doPost(e) {
       const sl = String(b.n || '');
       if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
       PropertiesService.getScriptProperties().deleteProperty('M_' + sl);
+      PropertiesService.getScriptProperties().deleteProperty('MC_' + sl);
       miSet_(sl, []);
+      bust_();
+      return out_({ ok: true });
+    }
+
+    if (b.a === 'mcv') {
+      // pilih sampul momen: b.n = slug momen, b.v = id file (kosong = kembali ke foto pertama)
+      const sl = String(b.n || '');
+      if (!/^[a-z0-9-]{1,60}$/.test(sl)) return out_({ ok: false, e: 'momen tidak valid' });
+      const sp = PropertiesService.getScriptProperties();
+      if (!b.v) sp.deleteProperty('MC_' + sl);
+      else if (/^[A-Za-z0-9_-]{10,80}$/.test(String(b.v))) sp.setProperty('MC_' + sl, String(b.v));
+      else return out_({ ok: false, e: 'sampul tidak valid' });
       bust_();
       return out_({ ok: true });
     }
@@ -1418,7 +1440,7 @@ function izinAkun() {
   ];
   /* Daftar akhir = daftar dasar + tambahan/ganti nama dari server (SN) - yang dihapus (SX). Slug tetap, jadi foto dan PIN tidak hilang saat ganti nama. */
   var SANTRI=[], SLUG={}, SN={}, SX=[];
-  var MOMEN={}, momenMap={}, MIDS={};
+  var MOMEN={}, momenMap={}, MIDS={}, MCOV={};
   function slugRaw(n){return n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
   function slugOf(n){return Object.prototype.hasOwnProperty.call(SLUG,n)?SLUG[n]:slugRaw(n);}
   function rebuildSantri(){
@@ -2523,7 +2545,7 @@ function izinAkun() {
     });
   }
   /* sel foto: sama persis dengan halaman tanggal (kolom, rasio asli potret/landscape, ukuran Kecil/Sedang/Besar) */
-  function momenCell(wrap,src,n,items,thumbs,delFn){
+  function momenCell(wrap,src,n,items,thumbs,delFn,cv){
     var w=document.createElement("div"); w.className="ph";
     var im=document.createElement("img"); im.decoding="async"; im.alt="Foto "+n; im.tabIndex=0; thumbs[n-1]=im;
     if(UK===3){
@@ -2536,6 +2558,7 @@ function izinAkun() {
     function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
     im.addEventListener("load",fit); longPress(im,items,n-1,thumbs); w.appendChild(im); if(im.complete) fit();
     if(delFn){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Keluarkan dari momen "+n);x.addEventListener("click",delFn);w.appendChild(x);}
+    if(cv){var cb2=document.createElement("button");cb2.type="button";cb2.className="cv";cb2.textContent=cv.on?"★":"☆";cb2.setAttribute("aria-label",cv.on?"Batalkan sampul momen":"Jadikan sampul momen");cb2.addEventListener("click",cv.fn);w.appendChild(cb2);}
     wrap.appendChild(w);
   }
   function renderMomenDetail(sl){
@@ -2561,7 +2584,7 @@ function izinAkun() {
       cnt.className="sc"; cnt.textContent=(items.length-v2)+" foto"+(v2?" \u00b7 "+v2+" video":"");
       left.appendChild(lab); head.appendChild(left); head.appendChild(cnt);
       items.forEach(function(src,i){
-        momenCell(ph,src,i+1,items,thumbs,own?function(){CLOUD.delMomen(sl,k,files[i]);}:null);
+        momenCell(ph,src,i+1,items,thumbs,own?function(){CLOUD.delMomen(sl,k,files[i]);}:null,own?{on:e.coverId===files[i].i,fn:function(){CLOUD.setMomenCover(sl,e.coverId===files[i].i?"":files[i].i);}}:null);
       });
       blk.appendChild(head); blk.appendChild(ph); box.appendChild(blk);
     });
@@ -3864,8 +3887,10 @@ function izinAkun() {
           e.tanggal[k]=arr.map(function(f){return ((f.t==="v"||f.t==="l")&&!f.p)?phVid(f):pu(f,mvw&&S.s===s);});
           e.f[k]=arr; e.total+=arr.length; e.last=k;
         });
-        var fk=Object.keys(e.tanggal)[0];
-        if(fk){var f0=e.f[fk][0]; e.cover=((f0.t==="v"||f0.t==="l")&&!f0.p)?null:pu(f0,mvw&&!S.s);}
+        var f0=null;
+        if(MCOV[s]) Object.keys(e.f).forEach(function(k){e.f[k].forEach(function(f){if(!f0&&f.i===MCOV[s]){f0=f;e.coverId=f.i;}});});
+        if(!f0){var fk=Object.keys(e.tanggal)[0]; if(fk) f0=e.f[fk][0];}
+        if(f0) e.cover=((f0.t==="v"||f0.t==="l")&&!f0.p)?null:pu(f0,mvw&&!S.s);
         m[s]=e;
       });
       return m;
@@ -3927,6 +3952,15 @@ function izinAkun() {
         try{history.replaceState(null,"",urlFor("momen"));}catch(e){}
         S={y:S.y,m:S.m,d:null,v:"momen",s:null}; show();
         segarCacheDaftar(); toast(cur+" dihapus dari daftar");
+      }).catch(function(){alert("Gagal terhubung.");});
+    }
+    function setMomenCover(sl,v){
+      if(v&&/^tmp_/.test(v)){alert("Masih mengunggah, tunggu sebentar.");return;}
+      if(!ensurePin()) return;
+      cpost({a:"mcv",pin:PIN,n:sl,v:v},0).then(function(j){
+        if(!j||!j.ok){galatMomen(j);return;}
+        if(v) MCOV[sl]=v; else delete MCOV[sl];
+        refresh(); segarCacheDaftar(); toast(v?"Sampul momen diatur":"Sampul dikembalikan ke foto pertama");
       }).catch(function(){alert("Gagal terhubung.");});
     }
     function delMomen(sl,k,f){
@@ -4078,7 +4112,7 @@ function izinAkun() {
         else bad(j);
       }).catch(function(){alert("Gagal terhubung.");});
     }
-    window.CLOUD={gate:gateDev,dev:renderDev,delMomen:delMomen,pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s; momenMap=buildMomen(); momenUi();}};
+    window.CLOUD={setMomenCover:setMomenCover,gate:gateDev,dev:renderDev,delMomen:delMomen,pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s; momenMap=buildMomen(); momenUi();}};
     if(!CU) return;
     /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
     (function(){
@@ -4251,7 +4285,7 @@ function izinAkun() {
         Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
         if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
-        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; }
+        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; if(j.mc&&typeof j.mc==="object") MCOV=j.mc; }
         Object.keys(j.mf||{}).forEach(function(sl){
           var bx=MV[sl]=MV[sl]||{};
           Object.keys(j.mf[sl]).forEach(function(d){var ar=bx[d]=bx[d]||[]; j.mf[sl][d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;ar.push(f);});});
