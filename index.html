@@ -2250,19 +2250,52 @@ button.b.alt.emas.ikon[hidden]{display:none}
         if(want==="auto"){cmd("setPlaybackQualityRange",["auto","auto"]);cmd("setPlaybackQuality",["default"]);return;}
         cmd("setPlaybackQualityRange",[want,want]); cmd("setPlaybackQuality",[want]);
       }
+      /* YouTube tidak memberi daftar resolusi asli lewat pemutar sematan. Jadi pilihan diuji: bila setelah beberapa detik
+         kualitas yang diputar ternyata lebih rendah dari yang dipilih, resolusi itu (dan yang di atasnya) disembunyikan
+         untuk video ini, dan pilihan dipindah ke kualitas yang benar-benar dipakai. */
+      var tolak={}, vTimer=0, qToast=null, qToastT=0;
+      function urutQ(q){return QL.indexOf(q);}
+      function qInfo(t){
+        if(qToast) qToast.remove();
+        qToast=document.createElement("div");
+        qToast.style.cssText="position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:7;max-width:90%;padding:8px 16px;border-radius:999px;background:rgba(0,0,0,.78);color:#fff;font:600 .8rem system-ui,sans-serif;text-align:center;pointer-events:none";
+        qToast.textContent=t; box.appendChild(qToast);
+        clearTimeout(qToastT); qToastT=setTimeout(function(){if(qToast){qToast.remove();qToast=null;}},3200);
+      }
+      function verifikasi(pilih,coba){
+        clearTimeout(vTimer);
+        vTimer=setTimeout(function(){
+          if(dead||want!==pilih||want==="auto") return;
+          var act=qNow;
+          if(!QH[act]) return;
+          if(act===pilih) return;
+          if(st.s!==1&&coba<3){verifikasi(pilih,coba+1);return;}
+          if(urutQ(act)>urutQ(pilih)){
+            /* diputar lebih rendah dari yang dipilih: resolusi pilihan tidak tersedia */
+            QL.forEach(function(q){if(urutQ(q)<urutQ(act)) tolak[q]=true;});
+            want=act; ukur(); dorong(); upd();
+            qInfo("Video ini tidak punya "+LBL[pilih]+", dipakai "+LBL[act]);
+          }
+        },7500);
+      }
       function qPilih(q){
         want=q; qTutup(); pushN=0; ukur(); dorong(); upd();
         setTimeout(function(){ukur();dorong();upd();},800);
         setTimeout(upd,2500);
+        if(q!=="auto") verifikasi(q,0); else clearTimeout(vTimer);
       }
+      cleanup.push(function(){clearTimeout(vTimer);clearTimeout(qToastT);});
       window.addEventListener("resize",ukur);
       document.addEventListener("fullscreenchange",ukur);
       document.addEventListener("webkitfullscreenchange",ukur);
       cleanup.push(function(){window.removeEventListener("resize",ukur);document.removeEventListener("fullscreenchange",ukur);document.removeEventListener("webkitfullscreenchange",ukur);});
       function qBuka(){
         if(qm){qTutup();return;}
-        var ls=QL.filter(function(q){return qAv?qAv.indexOf(q)>=0:["hd1080","hd720","large","medium","small","tiny"].indexOf(q)>=0;});
-        if(want!=="auto"&&ls.indexOf(want)<0) ls.push(want);
+        var ls=QL.filter(function(q){return !tolak[q]&&(qAv?qAv.indexOf(q)>=0:["hd1080","hd720","large","medium","small","tiny"].indexOf(q)>=0);});
+        if(want!=="auto"&&!tolak[want]&&ls.indexOf(want)<0){ls.push(want);ls.sort(function(a,b){return urutQ(a)-urutQ(b);});}
+        /* kualitas yang sedang benar-benar diputar selalu ada di daftar */
+        if(QH[qNow]&&ls.indexOf(qNow)<0){ls.push(qNow);ls.sort(function(a,b){return urutQ(a)-urutQ(b);});}
+        var akt=(QH[qNow]?qNow:(want!=="auto"?want:""));
         qm=document.createElement("div");
         qm.style.cssText="position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center";
         qm.addEventListener("click",function(e){if(e.target===qm) qTutup();});
@@ -2271,10 +2304,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
         sh.style.cssText="width:min(100%,520px);max-height:100%;overflow-y:auto;background:#212121;color:#fff;border-radius:16px 16px 0 0;padding:8px 0 calc(10px + env(safe-area-inset-bottom,0px));font:500 .95rem system-ui,sans-serif;-webkit-overflow-scrolling:touch";
         var hd=document.createElement("div");
         hd.style.cssText="padding:10px 20px 8px;color:#fff;font-weight:600";
-        hd.textContent="Kualitas untuk video saat ini"+((want==="auto"?(LBL[qNow]||""):(LBL[want]||""))?" \u2022 "+(want==="auto"?(LBL[qNow]||""):LBL[want]):"");
+        hd.textContent="Kualitas untuk video saat ini"+(LBL[akt]?" \u2022 "+LBL[akt]:"");
         sh.appendChild(hd);
         function item(q,t){
-          var on=(q===want), b=document.createElement("button"); b.type="button";
+          var on=(want==="auto"?q==="auto":q===akt), b=document.createElement("button"); b.type="button";
           b.style.cssText="all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:14px;width:100%;min-height:48px;padding:0 20px;color:#fff;font:inherit";
           var c=document.createElement("span"); c.style.cssText="width:22px;flex:none;text-align:center;font-size:1.2rem"; c.textContent=on?"\u2713":"";
           var l=document.createElement("span"); l.textContent=t;
