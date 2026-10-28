@@ -1295,7 +1295,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
   /* ketuk sekali: foto membesar (penampil layar penuh), tanpa tekan lama */
   function longPress(el,items,idx,thumbs){
     if(window.CLOUD&&CLOUD.isVideo(items[idx])){
-      el.addEventListener("click",function(){CLOUD.play(items[idx]);});
+      el.addEventListener("click",function(){openLb(items,idx,thumbs);});
+      el.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openLb(items,idx,thumbs);}});
       el.addEventListener("contextmenu",function(e){e.preventDefault();});
       setTimeout(function(){var p=el.parentNode;if(p)p.insertAdjacentHTML("beforeend",'<i style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">\u25B6</i>');},0);
       return;
