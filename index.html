@@ -586,6 +586,12 @@ function kodeOk_(n, c) {
   if (!ok) Utilities.sleep(800); // memperlambat tebak-tebakan kode
   return ok;
 }
+// Pemilik (PIN pemilik) boleh membaca/memutar file khusus santri mana pun lewat POST, tanpa PIN santri.
+// Dipakai hanya di jalur POST (bacaKode_ dan putar_) supaya PIN pemilik tidak pernah ada di alamat (URL).
+function izinBaca_(n, c) {
+  if (c && c === PIN) return true;
+  return kodeOk_(n, c);
+}
 function privSlug_(nama) {
   const m = /^p_([a-z0-9-]+)_/.exec(nama);
   return m ? m[1] : null;
@@ -723,7 +729,7 @@ function privList_(n) {
 function bacaKode_(b) {
   const n = String(b.n || '');
   if (!/^[a-z0-9-]+$/.test(n)) return out_({ ok: false, e: 'santri tidak valid' });
-  if (!kodeOk_(n, String(b.c || ''))) return out_({ ok: false, e: 'ditolak' });
+  if (!izinBaca_(n, String(b.c || ''))) return out_({ ok: false, e: 'ditolak' });
   if (b.a === 'ck') return out_({ ok: true });
   if (b.a === 'plk') return out_({ ok: true, k: privList_(n) });
   // file milik santri ini (atau file publik) saja; file santri lain ditolak
@@ -881,7 +887,7 @@ function putar_(b) {
   const nm = f.getName();
   if (!dalamFolder_(f) || !lnk_(nm)) return out_({ ok: false, e: 'ditolak' });
   const s = privSlug_(nm);
-  if (s && !(String(b.n || '') === s && kodeOk_(s, String(b.c || '')))) return out_({ ok: false, e: 'ditolak' });
+  if (s && !(String(b.n || '') === s && izinBaca_(s, String(b.c || '')))) return out_({ ok: false, e: 'ditolak' });
   let o;
   try { o = JSON.parse(f.getBlob().getDataAsString()); } catch (e) { return out_({ ok: false, e: 'gagal' }); }
   return out_({ ok: true, k: o.k, s: o.s, d: o.d || 0 });
@@ -2654,6 +2660,12 @@ function izinAkun() {
     }
     function pu(f,want){var x=f.p||f.i,u=urlOf(x,want); if(u!==PH){ if(f.t==="v"||f.t==="l"){cvid[u]=f.i; if(f.t==="l") clink[f.i]=1;} else if(f.p) cbig[u]=f.i; } return u;}
     function urlOf(x,want){var u=cb[x]; if(!u&&u===undefined&&want){cb[x]=null;cq.push(x);pumpSoon();} return u||PH;}
+    /* link/video tanpa gambar pratinjau: tampil sebagai kotak polos (tetap bisa diputar). Alamat unik per file lewat #id agar tidak bertabrakan */
+    function phVid(f){
+      var u="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#9a8272"/></svg>')+"#"+f.i;
+      cvid[u]=f.i; if(f.t==="l") clink[f.i]=1;
+      return u;
+    }
     function build(){
       var m={}, sv=S.v==="santri";
       Object.keys(cp).forEach(function(n){var u=urlOf(cp[n],sv); (m[n]=m[n]||{}).profil=(u!==PH)?u:undefined;});
@@ -2662,8 +2674,7 @@ function izinAkun() {
         f.s.forEach(function(n){var e=m[n]=m[n]||{}; e.tanggal=e.tanggal||{}; (e.tanggal[k]=e.tanggal[k]||[]).push(pu(f,sv&&S.s===n));});
       });});
       Object.keys(PV).forEach(function(n){var bx=PV[n]; Object.keys(bx).forEach(function(k){bx[k].forEach(function(f){
-        if((f.t==="v"||f.t==="l")&&!f.p) return;
-        var e=m[n]=m[n]||{}; e.tanggal=e.tanggal||{}; (e.tanggal[k]=e.tanggal[k]||[]).push(pu(f,sv&&S.s===n));
+        var e=m[n]=m[n]||{}; e.tanggal=e.tanggal||{}; (e.tanggal[k]=e.tanggal[k]||[]).push(((f.t==="v"||f.t==="l")&&!f.p)?phVid(f):pu(f,sv&&S.s===n));
       });});});
       return m;
     }
@@ -3033,7 +3044,7 @@ function izinAkun() {
       cleanup.push(function(){dead=true;clearInterval(hs);clearTimeout(to);window.removeEventListener("message",onmsg);});
     }
     function bad(j){
-      if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){}alert("PIN salah.");}
+      if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){}alert("PIN pemilik salah. Samakan PIN di Code.gs (yang sudah di-deploy ulang) dengan PIN mode pemilik, lalu coba lagi.");}
       else alert((j&&j.e)||"Gagal.");
     }
     function del(k,i){
@@ -3108,7 +3119,7 @@ function izinAkun() {
     /* unggahan khusus: akun pertama dulu; bila penuh lanjut ke akun berikutnya. Kode santri disalin ke akun tujuan lebih dulu */
     var kSync={};
     function syncKode(sl,i){
-      if(i===0) return Promise.resolve(true);
+      if(i===0||PCODE[sl]===PIN) return Promise.resolve(true);
       var key=i+"|"+sl+"|"+PCODE[sl];
       if(kSync[key]) return kSync[key];
       var o={}; o[sl]=PCODE[sl];
@@ -3239,7 +3250,7 @@ function izinAkun() {
     function ownerNow(){return !!PIN&&!!window.CLOUD_OWNER;}
     function savedAk(){try{return JSON.parse(localStorage.getItem(AK)||"{}")||{};}catch(e){return {};}}
     function saveAk(sl,c){try{var a=savedAk(); if(c) a[sl]=c; else delete a[sl]; localStorage.setItem(AK,JSON.stringify(a));}catch(e){}}
-    function pq(id){var s=priv[id]; return s?"&n="+s+"&c="+encodeURIComponent(PCODE[s]||""):"";}
+    function pq(id){var s=priv[id]; return s?"&n="+s+"&c="+(PCODE[s]===PIN?"":encodeURIComponent(PCODE[s]||"")):"";}
     function cekGet(sl,c){
       return fetch(CUS[0]+"?a=k&n="+sl+"&c="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){return !!(j&&j.ok);}).catch(function(){return null;});
     }
@@ -3256,6 +3267,7 @@ function izinAkun() {
       PCODE[sl]=c; var ids=[];
       Object.keys(bx).forEach(function(k){bx[k].forEach(function(f){
         priv[f.i]=sl; if(f.p) priv[f.p]=sl;
+        if(!f.p&&(f.t==="v"||f.t==="l")) return;
         var x=f.p||f.i; if(cb[x]===undefined){cb[x]=null; ids.push(x);}
       });});
       var g=[], pa={}; ids.forEach(function(x){var a=ow[x]||0; (pa[a]=pa[a]||[]).push(x);});
@@ -3299,18 +3311,25 @@ function izinAkun() {
     }
     function kodes(){
       if(!KODEP) KODEP=cpost({a:"kl",pin:PIN},0).then(function(j){
-        if(!j||!j.ok){KODEP=null; throw new Error("kl");}
+        if(!j||!j.ok){
+          KODEP=null;
+          if(j&&j.e==="pin"){PIN=""; try{localStorage.removeItem("album-pin");}catch(e){} toast("PIN pemilik salah: samakan dengan PIN di Code.gs (sudah di-deploy ulang).");}
+          throw new Error("kl");
+        }
         KODE=j.m||{}; return KODE;
       },function(e){KODEP=null; throw e;});
       return KODEP;
     }
     /* pemilik: ambil kode santri lalu muat unggahan khususnya */
     function ownerLoad(sl){
-      if(!PVP[sl]) PVP[sl]=kodes().then(function(m){
-        if(!m[sl]){PV[sl]=PV[sl]||{}; return true;}
-        PCODE[sl]=m[sl];
+      /* pemilik membaca unggahan khusus dengan PIN santri bila ada; bila tidak ada atau gagal, dengan PIN pemilik (server: izinBaca_) */
+      if(!PVP[sl]) PVP[sl]=kodes().catch(function(){return {};}).then(function(m){
+        var c=m[sl];
+        function viaPin(){PCODE[sl]=PIN; return loadPriv(sl,PIN).then(function(ok){if(!ok) PV[sl]=PV[sl]||{}; return ok;});}
+        if(!c) return viaPin();
+        PCODE[sl]=c;
         /* samakan kode santri di semua akun dulu: memperbaiki kode lama/hilang di akun lain agar file di sana ikut terbaca */
-        return Promise.all(CUS.map(function(u,i){return syncKode(sl,i);})).then(function(){return loadPriv(sl,m[sl]);});
+        return Promise.all(CUS.map(function(u,i){return syncKode(sl,i);})).then(function(){return loadPriv(sl,c);}).then(function(ok){return ok?true:viaPin();});
       }).catch(function(){PVP[sl]=null; return false;});
       return PVP[sl];
     }
@@ -3467,38 +3486,24 @@ function izinAkun() {
     }
     function tambahSantri(){
       if(!ensurePin()) return;
-      var u=overlay(380), h=document.createElement("b"), note=document.createElement("small"), ni=fld(document.createElement("input")), pr=document.createElement("div"), pi=fld(document.createElement("input")), ac=document.createElement("button");
+      var u=overlay(380), h=document.createElement("b"), note=document.createElement("small"), ni=fld(document.createElement("input"));
       h.textContent="Tambah santri";
-      note.textContent="PIN dipakai santri untuk membuka halamannya (4–32 huruf/angka, disarankan 6 angka). Kosongkan bila belum ingin membuat PIN: halaman santri akan terkunci.";
+      note.textContent="Cukup nama. PIN santri dibuat otomatis saat pertama kali Anda mengunggah foto/video khusus untuknya, atau atur lewat Kelola PIN santri.";
       ni.type="text"; ni.placeholder="Nama lengkap santri"; ni.autocomplete="off"; ni.setAttribute("aria-label","Nama santri");
-      pr.style.cssText="display:flex;gap:6px;align-items:center";
-      pi.type="text"; pi.value=acak(); pi.autocomplete="off"; pi.autocapitalize="off"; pi.spellcheck=false; pi.style.flex="1"; pi.setAttribute("aria-label","PIN santri");
-      ac.type="button"; ac.className="b alt"; ac.textContent="Acak"; ac.onclick=function(){pi.value=acak();};
-      pr.appendChild(pi); pr.appendChild(ac);
-      u.c.appendChild(h); u.c.appendChild(ni); u.c.appendChild(pr); u.c.appendChild(note);
-      btnRow(u.c,[["Batal",function(){u.o.remove();}],["Simpan",function(b){
+      u.c.appendChild(h); u.c.appendChild(ni); u.c.appendChild(note);
+      function simpan(b){
         var r=namaSantriOk(ni.value,null); if(r.e){alert(r.e);return;}
-        var pin=pi.value.trim();
-        if(pin&&!/^[A-Za-z0-9]{4,32}$/.test(pin)){alert("PIN harus 4–32 huruf/angka.");return;}
         if(SX.indexOf(r.s)>=0&&!confirm("Nama ini pernah dihapus. Foto/video lamanya (jika masih ada di Drive) akan muncul lagi. Lanjutkan?")) return;
         b.disabled=true; b.textContent="Menyimpan…";
-        cpost({a:"sn",pin:PIN,n:r.s,v:r.n,c:pin},0).then(function(j){
+        cpost({a:"sn",pin:PIN,n:r.s,v:r.n},0).then(function(j){
           b.disabled=false; b.textContent="Simpan";
           if(!j||!j.ok){galatSantri(j);return;}
           SN[r.s]=r.n; SX=SX.filter(function(x){return x!==r.s;}); rebuildSantri();
-          if(pin){KODE[r.s]=pin; PCODE[r.s]=pin;}
-          u.o.remove(); refresh(); segarCacheDaftar();
-          var info=r.n+" ditambahkan."+(pin?"\nPIN: "+pin+"\nCatat dan bagikan ke santri yang bersangkutan.":"\nBelum ada PIN. Atur lewat Kelola PIN santri.");
-          if(pin&&CUS.length>1){
-            var o={}; o[r.s]=pin;
-            Promise.all(CUS.slice(1).map(function(x,ix){return cpost({a:"kodes",pin:PIN,m:o},ix+1).then(function(q){return !!(q&&q.ok);}).catch(function(){return false;});})).then(function(rs){
-              var gagal=[]; rs.forEach(function(q,ix){if(!q) gagal.push(ix+2);});
-              alert(info+(gagal.length?"\nGagal menyalin PIN ke akun ke-"+gagal.join(", ")+" (pastikan Code.gs akun itu sudah diperbarui).":""));
-            });
-          }else alert(info);
+          u.o.remove(); refresh(); segarCacheDaftar(); toast(r.n+" ditambahkan");
         }).catch(function(){b.disabled=false; b.textContent="Simpan"; alert("Gagal terhubung.");});
-      }]]);
-      ni.addEventListener("keydown",function(e){if(e.key==="Enter") pi.focus();});
+      }
+      btnRow(u.c,[["Batal",function(){u.o.remove();}],["Simpan",simpan]]);
+      ni.addEventListener("keydown",function(e){if(e.key==="Enter") u.c.querySelectorAll("button")[1].click();});
       ni.focus();
     }
     function ubahNamaSantri(sl){
@@ -3529,7 +3534,7 @@ function izinAkun() {
     }
     /* unggahan khusus pada tanggal k yang menempati tile ke-i (tile terakhir = unggahan khusus) */
     function privAt(sl,k,i,total){
-      var a=((PV[sl]&&PV[sl][k])||[]).filter(function(f){return !((f.t==="v"||f.t==="l")&&!f.p);});
+      var a=(PV[sl]&&PV[sl][k])||[];
       var j=i-(total-a.length); return (j>=0&&j<a.length)?a[j]:null;
     }
     function delPriv(sl,k,f){
