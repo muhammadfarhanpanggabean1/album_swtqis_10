@@ -322,6 +322,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .ph.gagal::before,.sgal .st.gagal::before{content:"";position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-26px 0 0 -14px;opacity:.6;background:no-repeat center/contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a8272' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='4.5' width='17' height='15' rx='3'/><circle cx='9' cy='10' r='1.6'/><path d='M4 17l5-4.5 4 3.5 3-2.5 4 3.5'/></svg>")}
 .ph.gagal::after,.sgal .st.gagal::after{content:"Belum tersedia";position:absolute;left:0;right:0;top:50%;margin-top:10px;text-align:center;font-size:.72rem;font-weight:700;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.ph:not(.ld):not(.gagal),.sgal .st:not(.ok):not(.gagal){animation:none}.sgal .st img{transition:none}}
+#lbplay{position:absolute;z-index:2;width:68px;height:68px;min-width:0;padding:0 0 0 4px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;line-height:1;background:rgba(0,0,0,.6);color:#fff;border:2px solid rgba(255,255,255,.85);box-shadow:0 4px 18px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#lbplay[hidden]{display:none}
+#lbplay:focus-visible{outline:3px solid #e2c077;outline-offset:3px}
+.sgal .st i.pb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.95rem;padding-left:2px;pointer-events:none}
 </style>
 </head>
 <body>
@@ -387,6 +391,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
 </nav>
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Pratinjau foto">
   <img id="lbimg" alt="">
+  <button class="b" id="lbplay" type="button" hidden aria-label="Putar video">▶</button>
   <span class="cnt" id="lbcnt" aria-live="polite"></span>
   <div class="lbsn" id="lbsn"></div>
   <button class="b" id="lbclose">Kembali</button>
@@ -1017,11 +1022,26 @@ button.b.alt.emas.ikon[hidden]{display:none}
   cal.addEventListener("click",function(e){if(lpFired){lpFired=false;e.stopPropagation();e.preventDefault();}},true);
 
   var lb=document.getElementById("lb"), lbimg=document.getElementById("lbimg"), lbclose=document.getElementById("lbclose");
-  var lbcnt=document.getElementById("lbcnt"), lbsn=document.getElementById("lbsn"), LBGO=null, lbItems=[], lbIdx=0;
+  var lbcnt=document.getElementById("lbcnt"), lbsn=document.getElementById("lbsn"), LBGO=null, lbItems=[], lbIdx=0, lbplay=document.getElementById("lbplay");
   var lbZ={s:1,x:0,y:0}, ZMAX=5;
   function lbZoomReset(){lbZ.s=1;lbZ.x=0;lbZ.y=0;lbimg.style.scale="";lbimg.style.translate="";}
   function lbCenter(){return {x:lbimg.offsetLeft+lbimg.offsetWidth/2,y:lbimg.offsetTop+lbimg.offsetHeight/2};}
+  /* tombol play di tengah gambar bila item yang tampil adalah video / link video; muncul setelah thumbnail tampil */
+  function lbPlayPos(){
+    var u=lbItems[lbIdx];
+    if(lb.hidden||lbBusy||lbClosing||lbZ.s>1.001||!(window.CLOUD&&CLOUD.isVideo(u))){lbplay.hidden=true;return;}
+    var r=lbimg.getBoundingClientRect();
+    if(!r.width){lbplay.hidden=true;return;}
+    lbplay.style.left=Math.round(r.left+r.width/2-34)+"px"; lbplay.style.top=Math.round(r.top+r.height/2-34)+"px"; lbplay.hidden=false;
+  }
+  lbplay.addEventListener("click",function(e){
+    e.stopPropagation();
+    var u=lbItems[lbIdx]; if(window.CLOUD&&CLOUD.isVideo(u)) CLOUD.play(u);
+  });
+  lbimg.addEventListener("load",function(){setTimeout(lbPlayPos,260);});
+  window.addEventListener("resize",function(){if(!lb.hidden) setTimeout(lbPlayPos,120);});
   function lbApplyZ(){
+    if(lbZ.s>1.001) lbplay.hidden=true; else setTimeout(lbPlayPos,280);
     if(lbZ.s<=1){lbimg.style.scale="";lbimg.style.translate="";return;}
     lbimg.style.scale=lbZ.s; lbimg.style.translate=lbZ.x+"px "+lbZ.y+"px";
   }
@@ -1067,6 +1087,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     S={y:S.y,m:S.m,d:null,v:"santri",s:g}; show();
   }
   function lbRender(){
+    lbplay.hidden=true;
     lbZoomReset();
     var full=lbItems[lbIdx], th=lbThumbs[lbIdx], ts=th&&(th.currentSrc||th.src);
     /* tampilkan thumbnail seketika, lalu ganti ke foto asli begitu siap */
@@ -1109,14 +1130,14 @@ button.b.alt.emas.ikon[hidden]{display:none}
         lbimg.style.transform="";lbimg.style.opacity="1";
       }
       lb.classList.add("in");setGhost(lbIdx);
-      setTimeout(function(){lbBusy=false;lbimg.style.transition="none";},DUR_IN);
+      setTimeout(function(){lbBusy=false;lbimg.style.transition="none";lbPlayPos();},DUR_IN);
     }
     var dec=lbimg.decode?lbimg.decode().catch(function(){}):Promise.resolve();
     Promise.race([dec,new Promise(function(r){setTimeout(r,300);})]).then(function(){requestAnimationFrame(go);});
   }
   function hideLb(){
     if(lb.hidden||lbClosing) return;
-    lbClosing=true;lbBusy=true;
+    lbClosing=true;lbBusy=true;lbplay.hidden=true;
     lbimg.style.transition="none";lbZoomReset();
     var th=lbThumbs[lbIdx], vis=false;
     if(th&&document.body.contains(th)){var r=th.getBoundingClientRect();vis=r.width>0&&r.bottom>0&&r.top<window.innerHeight;}
@@ -1148,6 +1169,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       void lbimg.offsetWidth;
       lbimg.style.transition="transform .2s ease,opacity .2s ease";
       lbimg.style.transform="";lbimg.style.opacity="1";
+      setTimeout(lbPlayPos,230);
     },180);
     return true;
   }
@@ -1200,6 +1222,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         maxMove=Math.max(maxMove,Math.hypot(e.clientX-tx,e.clientY-ty));
         var edge=(lbIdx===0&&dx>0)||(lbIdx===lbItems.length-1&&dx<0);
         var v=edge?dx*0.3:dx;
+        if(Math.abs(dx)>8) lbplay.hidden=true;
         lbimg.style.transform="translateX("+v+"px) rotate("+(v/22)+"deg)";
       }
     });
@@ -1219,7 +1242,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
         if(Math.abs(dx)>8) lbDragged=true;
         var dt=Math.max(1,Date.now()-st), fast=Math.abs(dx)/dt>0.5&&Math.abs(dx)>30;
         if(e.type==="pointerup"&&(Math.abs(dx)>80||fast)&&lbGo(dx<0?1:-1)) return;
-        lbimg.style.transition="transform .2s ease";lbimg.style.transform="";
+        lbimg.style.transition="transform .2s ease";lbimg.style.transform="";setTimeout(lbPlayPos,230);
       }
       /* ketuk dua kali = zoom masuk/keluar */
       if(e.type==="pointerup"&&(m==="swipe"||m==="pan")&&lbTapImg&&maxMove<10&&Date.now()-st<350){
@@ -1571,7 +1594,9 @@ button.b.alt.emas.ikon[hidden]{display:none}
         b.type="button"; b.className="st"; b.setAttribute("aria-label","Buka foto "+(i+1)+" dari "+items.length+", "+d+" "+BULAN[m-1]+" "+y);
         im.alt=""; im.loading="lazy"; im.draggable=false; thumbs[i]=im; setThumb(im,src);
         b.addEventListener("click",function(){openLb(items,i,thumbs);});
-        b.appendChild(im); grid.appendChild(b);
+        b.appendChild(im);
+        if(window.CLOUD&&CLOUD.isVideo(src)){b.setAttribute("aria-label","Buka video "+(i+1)+" dari "+items.length+", "+d+" "+BULAN[m-1]+" "+y); b.insertAdjacentHTML("beforeend",'<i class="pb" aria-hidden="true">\u25B6</i>');}
+        grid.appendChild(b);
       });
       blk.appendChild(head); blk.appendChild(grid); box.appendChild(blk);
     });
@@ -2137,11 +2162,30 @@ button.b.alt.emas.ikon[hidden]{display:none}
       /* menu kualitas seperti di YouTube: lembar dari bawah, daftar resolusi yang tersedia, centang pada pilihan */
       var qm=null;
       function qTutup(){if(qm){qm.remove();qm=null;}}
-      function qPilih(q){
-        want=q; qTutup();
-        cmd("setPlaybackQuality",[q==="auto"?"default":q]); upd();
-        setTimeout(upd,1500);
+      /* YouTube memilih kualitas dari ukuran pemutar: iframe kecil di HP otomatis jatuh ke 480p walau 1080p dipilih.
+         Solusi: bingkai iframe dibuat sebesar resolusi pilihan (mis. 1920x1080) lalu diperkecil lewat CSS agar pas di kotak. */
+      var QH={hd2160:2160,hd1440:1440,hd1080:1080,hd720:720,large:480,medium:360,small:240,tiny:144}, FR0=fr.style.cssText, lastPush=0, pushN=0;
+      function ukur(){
+        var h=QH[want];
+        if(want==="auto"||!h){fr.style.cssText=FR0;return;}
+        var W=Math.round(h*16/9), cw=box.clientWidth, ch=box.clientHeight;
+        if(!cw||!ch){fr.style.cssText=FR0;return;}
+        var k=Math.min(cw/W,ch/h);
+        fr.style.cssText="position:absolute;left:"+Math.round((cw-W*k)/2)+"px;top:"+Math.round((ch-h*k)/2)+"px;width:"+W+"px;height:"+h+"px;border:0;max-width:none;transform-origin:0 0;transform:scale("+k+")";
       }
+      function dorong(){
+        if(want==="auto"){cmd("setPlaybackQualityRange",["auto","auto"]);cmd("setPlaybackQuality",["default"]);return;}
+        cmd("setPlaybackQualityRange",[want,want]); cmd("setPlaybackQuality",[want]);
+      }
+      function qPilih(q){
+        want=q; qTutup(); pushN=0; ukur(); dorong(); upd();
+        setTimeout(function(){ukur();dorong();upd();},800);
+        setTimeout(upd,2500);
+      }
+      window.addEventListener("resize",ukur);
+      document.addEventListener("fullscreenchange",ukur);
+      document.addEventListener("webkitfullscreenchange",ukur);
+      cleanup.push(function(){window.removeEventListener("resize",ukur);document.removeEventListener("fullscreenchange",ukur);document.removeEventListener("webkitfullscreenchange",ukur);});
       function qBuka(){
         if(qm){qTutup();return;}
         var ls=QL.filter(function(q){return qAv?qAv.indexOf(q)>=0:["hd1080","hd720","large","medium","small","tiny"].indexOf(q)>=0;});
@@ -2176,14 +2220,14 @@ button.b.alt.emas.ikon[hidden]{display:none}
         if(e.source!==fr.contentWindow) return;
         var d=e.data; if(typeof d==="string"){try{d=JSON.parse(d);}catch(x){return;}}
         if(!d||!d.event) return; ok=true;
-        if(d.event==="onStateChange"&&typeof d.info==="number"){st.s=d.info; upd(); if(d.info===1&&want!=="auto"&&qNow&&qNow!==want) cmd("setPlaybackQuality",[want]);}
+        if(d.event==="onStateChange"&&typeof d.info==="number"){st.s=d.info; upd(); if(d.info===1&&want!=="auto") dorong();}
         var i=d.info;
         if((d.event==="initialDelivery"||d.event==="infoDelivery")&&i&&typeof i==="object"){
           if(typeof i.currentTime==="number") st.t=i.currentTime;
           if(typeof i.duration==="number"&&i.duration>0) st.d=i.duration;
           if(typeof i.playerState==="number") st.s=i.playerState;
           if(typeof i.muted==="boolean") st.m=i.muted;
-          if(typeof i.playbackQuality==="string") qNow=i.playbackQuality;
+          if(typeof i.playbackQuality==="string") qNow=i.playbackQuality; if(want!=="auto"&&qNow&&qNow!==want&&st.s===1&&pushN<6&&Date.now()-lastPush>2500){lastPush=Date.now();pushN++;ukur();dorong();}
           if(Array.isArray(i.availableQualityLevels)&&i.availableQualityLevels.length) qAv=i.availableQualityLevels;
           upd();
         }
