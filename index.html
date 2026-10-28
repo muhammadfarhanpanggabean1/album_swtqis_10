@@ -2086,6 +2086,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
     }
     function ytKontrol(box,fr,gagal,cleanup){
       var st={t:0,d:0,s:-1,m:false}, ok=false, dead=false, drag=false;
+      var HOLE="polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,36% 32%,36% 68%,64% 68%,64% 32%,36% 32%)";
       function cmd(fn,args){try{fr.contentWindow.postMessage(JSON.stringify({event:"command",func:fn,args:args||[]}),"*");}catch(e){}}
       var cover=document.createElement("div");
       cover.style.cssText="position:absolute;inset:0;z-index:2;background:transparent;touch-action:manipulation";
@@ -2103,6 +2104,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
         bp.textContent=(st.s===1||st.s===3)?"⏸":"▶"; tm.textContent=fmt(st.t); td.textContent=fmt(st.d);
         if(!drag&&st.d>0) rg.value=Math.round(st.t/st.d*1000);
         bm.textContent=st.m?"🔇":"🔊";
+        /* sebelum video pernah mulai: lubang kecil di tombol putar bawaan YouTube agar ketukan pertama asli (bukan skrip) */
+        cover.style.clipPath=cover.style.webkitClipPath=(st.s===-1||st.s===5)?HOLE:"none";
       }
       function toggle(){cmd((st.s===1||st.s===3)?"pauseVideo":"playVideo");}
       cover.addEventListener("click",toggle); bp.addEventListener("click",toggle);
@@ -2114,7 +2117,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
       });
       rg.addEventListener("input",function(){drag=true; if(st.d>0){st.t=rg.value/1000*st.d; tm.textContent=fmt(st.t);}});
       rg.addEventListener("change",function(){drag=false; if(st.d>0) cmd("seekTo",[rg.value/1000*st.d,true]);});
-      box.appendChild(cover); box.appendChild(bar);
+      box.appendChild(cover); box.appendChild(bar); upd();
       function onmsg(e){
         if(e.source!==fr.contentWindow) return;
         var d=e.data; if(typeof d==="string"){try{d=JSON.parse(d);}catch(x){return;}}
