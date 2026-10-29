@@ -189,6 +189,37 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
   opacity:0;visibility:hidden;transform:translateY(-8px) scale(.94);pointer-events:none;transition:opacity .22s ease,transform .22s ease,visibility 0s linear .22s}
 .uk.ngambang.tampil{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition:opacity .22s ease,transform .22s ease,visibility 0s}
 @media (prefers-reduced-motion:reduce){.uk.ngambang,.uk.ngambang.tampil{transition:none}}
+/* ===== Tombol pemutar video link: kaca di atas video ===== */
+.yg{all:unset;box-sizing:border-box;cursor:pointer;min-width:42px;height:42px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:999px;color:#fff;font:700 .95rem system-ui,sans-serif;line-height:1;
+  background:linear-gradient(150deg,rgba(255,255,255,.38),rgba(255,255,255,.1));border:1px solid rgba(255,255,255,.4);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.12),0 4px 14px rgba(0,0,0,.38);text-shadow:0 1px 3px rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(10px) saturate(170%);backdrop-filter:blur(10px) saturate(170%);transition:transform .15s ease,background .2s ease;-webkit-tap-highlight-color:transparent}
+.yg:active{background:linear-gradient(150deg,rgba(255,255,255,.55),rgba(255,255,255,.2))}
+.yg:focus-visible{outline:3px solid #e2c077;outline-offset:2px}
+.yg svg{width:20px;height:20px;fill:currentColor;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+.yg small{font-size:.58rem;font-weight:800;margin-top:-1px;letter-spacing:.02em}
+.yg.bsr{min-width:54px;height:54px}
+.yg.bsr svg{width:26px;height:26px}
+.yg.pil{padding:0 14px;font-size:.78rem;min-width:52px;height:38px}
+@media (prefers-reduced-motion:reduce){.yg{transition:none}}
+/* ===== Animasi tekan: memantul kecil untuk semua tombol (tombol .b sudah punya efek tekan sendiri) ===== */
+@keyframes tekan{0%{scale:1}35%{scale:.88}70%{scale:1.05}100%{scale:1}}
+.tkn{animation:tekan .34s cubic-bezier(.3,.7,.4,1)}
+@media (prefers-reduced-motion:reduce){.tkn{animation:none}}
+/* tombol Kembali pada pratinjau foto/video: kaca di atas latar gelap */
+.lb button.b#lbclose{background:linear-gradient(150deg,rgba(255,255,255,.38),rgba(255,255,255,.1));color:#fff;border:1px solid rgba(255,255,255,.4);padding:11px 26px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.12),0 4px 14px rgba(0,0,0,.38);text-shadow:0 1px 3px rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(10px) saturate(170%);backdrop-filter:blur(10px) saturate(170%)}
+.lb button.b#lbclose:focus-visible{outline:3px solid #e2c077;outline-offset:2px}
+/* ===== Pil jumlah dari kaca ===== */
+html .badge,html .sgal .sc{--j-bg:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,255,255,.3));--j-garis:rgba(255,255,255,.8);--j-atas:rgba(255,255,255,.95);--j-bayang:0 4px 12px rgba(120,80,50,.16),0 1px 2px rgba(120,80,50,.1);
+  background:var(--j-bg);color:var(--ink);border:1px solid var(--j-garis);box-shadow:inset 0 1px 0 var(--j-atas),inset 0 -1px 0 rgba(255,255,255,.2),var(--j-bayang);
+  -webkit-backdrop-filter:blur(12px) saturate(180%);backdrop-filter:blur(12px) saturate(180%)}
+@media (prefers-color-scheme:dark){html .badge,html .sgal .sc{--j-bg:linear-gradient(150deg,rgba(255,255,255,.2),rgba(255,255,255,.06));--j-garis:rgba(255,255,255,.24);--j-atas:rgba(255,255,255,.32);--j-bayang:0 4px 12px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.25)}}
+/* di atas foto: kaca lebih gelap + teks putih agar angka tetap terbaca */
+html .day .c,html .mem .c{background:linear-gradient(150deg,rgba(255,255,255,.4),rgba(255,255,255,.12));color:#fff;border:1px solid rgba(255,255,255,.5);text-shadow:0 1px 3px rgba(0,0,0,.55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -1px 0 rgba(255,255,255,.12),0 3px 10px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(8px) saturate(170%) brightness(.85);backdrop-filter:blur(8px) saturate(170%) brightness(.85)}
 .ph{position:relative;border-radius:16px;overflow:hidden;break-inside:avoid;margin-bottom:8px;min-height:120px;background:var(--accent-soft)}
 .ph.ld{min-height:0;background:none}
 .ph img{width:100%;height:auto;display:block;object-fit:cover}
@@ -3288,8 +3319,8 @@ function izinAkun() {
       o.addEventListener("contextmenu",function(e){e.preventDefault();});
       o.addEventListener("dragstart",function(e){e.preventDefault();});
       var tx=document.createElement("span"); tx.textContent="Memuat video…"; o.appendChild(tx);
-      var x=document.createElement("button");x.textContent="×";x.className="b";x.setAttribute("aria-label","Tutup video");
-      x.style.cssText="position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:44px;height:44px;z-index:5";
+      var x=document.createElement("button");x.textContent="×";x.className="yg";x.setAttribute("aria-label","Tutup video");
+      x.style.cssText="position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:44px;height:44px;z-index:5;font-size:1.6rem;padding-bottom:3px";
       o.appendChild(x); document.body.appendChild(o);
       var cleanup=[], closed=false;
       function tutup(){
@@ -3364,19 +3395,27 @@ function izinAkun() {
       cover.style.cssText="position:absolute;inset:0;z-index:2;background:transparent;touch-action:manipulation";
       cover.addEventListener("contextmenu",function(e){e.preventDefault();});
       var bar=document.createElement("div");
-      bar.style.cssText="position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font:600 .85rem system-ui,sans-serif";
-      function mk(t,lab){var b=document.createElement("button");b.type="button";b.textContent=t;b.setAttribute("aria-label",lab);b.style.cssText="all:unset;cursor:pointer;min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#fff";return b;}
-      var bp=mk("▶","Putar/jeda"), tm=document.createElement("span"), rg=document.createElement("input"), td=document.createElement("span"), bm=mk("🔊","Suara"), bf=mk("⛶","Layar penuh");
+      bar.style.cssText="position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:22px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font:600 .85rem system-ui,sans-serif";
+      function mk(t,lab){var b=document.createElement("button");b.type="button";b.className="yg";b.textContent=t;b.setAttribute("aria-label",lab);return b;}
+      var SV='<svg viewBox="0 0 24 24" aria-hidden="true">', IPL=SV+'<path d="M8 5.5v13l11-6.5z"/></svg>', IPA=SV+'<rect x="6.5" y="5" width="3.8" height="14" rx="1.2"/><rect x="13.7" y="5" width="3.8" height="14" rx="1.2"/></svg>',
+          IMD=SV+'<path d="M11 6.5v11L3 12z"/><path d="M20 6.5v11L12 12z"/></svg><small>10</small>', IMJ=SV+'<path d="M13 6.5v11L21 12z"/><path d="M4 6.5v11L12 12z"/></svg><small>10</small>';
+      var bp=mk("","Putar/jeda"), bk=mk("","Mundur 10 detik"), mj=mk("","Maju 10 detik"), tm=document.createElement("span"), rg=document.createElement("input"), td=document.createElement("span"), bm=mk("🔊","Suara"), bf=mk("⛶","Layar penuh");
       /* percobaan: pilih kualitas YouTube (YouTube boleh mengabaikan; label menunjukkan kualitas yang benar-benar dipakai) */
       var QL=["hd2160","hd1440","hd1080","hd720","large","medium","small","tiny"], LBL={hd2160:"2160p",hd1440:"1440p",hd1080:"1080p",hd720:"720p",large:"480p",medium:"360p",small:"240p",tiny:"144p",highres:"4K"}, want="auto", qNow="", qAv=null;
-      var bq=mk("Auto","Kualitas video"); bq.style.minWidth="46px"; bq.style.fontSize=".78rem";
+      var bq=mk("Auto","Kualitas video"); bq.classList.add("pil");
       tm.textContent="0:00"; td.textContent="0:00"; tm.style.minWidth=td.style.minWidth="38px";
       rg.type="range"; rg.min=0; rg.max=1000; rg.value=0; rg.style.cssText="flex:1;min-width:0;accent-color:#fff"; rg.setAttribute("aria-label","Posisi video");
-      bar.appendChild(bp); bar.appendChild(tm); bar.appendChild(rg); bar.appendChild(td); bar.appendChild(bm); bar.appendChild(bq);
-      if(box.requestFullscreen||box.webkitRequestFullscreen) bar.appendChild(bf);
+      bp.classList.add("bsr"); bk.innerHTML=IMD; mj.innerHTML=IMJ; bp.innerHTML=IPL;
+      function dv(css){var d=document.createElement("div");d.style.cssText=css;return d;}
+      var r1=dv("display:flex;align-items:center;gap:10px"), r2=dv("display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px"),
+          kiri=dv("display:flex;justify-content:flex-start"), tgh=dv("display:flex;align-items:center;gap:14px"), kanan=dv("display:flex;justify-content:flex-end;align-items:center;gap:8px");
+      r1.appendChild(tm); r1.appendChild(rg); r1.appendChild(td);
+      kiri.appendChild(bm); tgh.appendChild(bk); tgh.appendChild(bp); tgh.appendChild(mj); kanan.appendChild(bq);
+      if(box.requestFullscreen||box.webkitRequestFullscreen) kanan.appendChild(bf);
+      r2.appendChild(kiri); r2.appendChild(tgh); r2.appendChild(kanan); bar.appendChild(r1); bar.appendChild(r2);
       function fmt(t){t=Math.max(0,Math.floor(t||0));var m=Math.floor(t/60),s=t%60;return m+":"+(s<10?"0":"")+s;}
       function upd(){
-        bp.textContent=(st.s===1||st.s===3)?"⏸":"▶"; tm.textContent=fmt(st.t); td.textContent=fmt(st.d);
+        var main=(st.s===1||st.s===3); bp.innerHTML=main?IPA:IPL; bp.setAttribute("aria-label",main?"Jeda":"Putar"); tm.textContent=fmt(st.t); td.textContent=fmt(st.d);
         if(!drag&&st.d>0) rg.value=Math.round(st.t/st.d*1000);
         bm.textContent=st.m?"🔇":"🔊";
         /* sebelum video pernah mulai: lubang kecil di tombol putar bawaan YouTube agar ketukan pertama asli (bukan skrip) */
@@ -3385,6 +3424,7 @@ function izinAkun() {
       }
       function toggle(){cmd((st.s===1||st.s===3)?"pauseVideo":"playVideo");}
       bp.addEventListener("click",toggle);
+      bk.addEventListener("click",function(){lompat(-1);}); mj.addEventListener("click",function(){lompat(1);});
       /* ketuk dua kali di sepertiga kiri/kanan: mundur/maju 10 detik. Ketukan pertama di sisi tidak melakukan apa pun.
          Setelah ketukan ganda, ketukan berikutnya di sisi yang sama (dalam 0,6 detik) langsung lompat lagi. Bagian tengah: putar/jeda. */
       var lastT=0, lastS=0, chainUntil=0, accum=0, fbT=0, fb=document.createElement("div");
@@ -4663,6 +4703,19 @@ document.addEventListener("keydown",function(e){
 })();
 /* service worker: syarat agar aplikasi bisa dipasang dan tetap terbuka saat offline */
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js",{scope:"./"}).catch(function(){});});}
+</script>
+<script>
+/* animasi tekan: pantulan kecil pada tombol saat disentuh (satu pendengar untuk semua tombol, termasuk yang dibuat belakangan) */
+(function(){
+  document.addEventListener("pointerdown",function(e){
+    var t=e.target; if(!t||!t.closest) return;
+    var b=t.closest("button"); if(!b||b.disabled||b.classList.contains("b")) return;
+    b.classList.remove("tkn"); void b.offsetWidth; b.classList.add("tkn");
+  },true);
+  document.addEventListener("animationend",function(e){
+    if(e.animationName==="tekan") e.target.classList.remove("tkn");
+  },true);
+})();
 </script>
 </body>
 </html>
