@@ -188,7 +188,9 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
 .sgal .st .x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(60,40,30,.75);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;cursor:pointer}
 .ph button.tg{right:auto;left:40px;font-size:14px;font-weight:700;line-height:1;padding:0}
 .ph button.sr{right:auto;top:auto;left:50%;bottom:8px;transform:translateX(-50%);width:72px;height:36px;font-size:20px;line-height:1;padding:0;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
-.ph.drag{opacity:.6;outline:3px solid var(--today);outline-offset:-3px}
+.ph{transition:opacity .2s ease,box-shadow .22s ease}
+.ph.drag{z-index:5;opacity:1;will-change:transform;box-shadow:0 18px 36px rgba(60,40,30,.38),0 4px 10px rgba(60,40,30,.2)}
+.mengatur .ph:not(.drag){opacity:.88}
 .ph img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lb{position:fixed;inset:0;z-index:50;background:rgba(30,20,15,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 12px calc(16px + env(safe-area-inset-bottom,0px));transition:background .3s ease}
 .lb[hidden]{display:none}
@@ -2227,32 +2229,85 @@ function izinAkun() {
   }
   var aturMode=false, aturK="";
   function seret(e0,w,k){
-    var pid=e0.pointerId, y=e0.clientY, jalan=true, ras=0;
+    var pid=e0.pointerId, px=e0.clientX, py=e0.clientY, jalan=true, ras=0, tx=0, ty=0, ubah=true, terakhir=0;
+    var kurang=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+    var r0=w.getBoundingClientRect(), ox=px-(r0.left+r0.width/2), oy=py-(r0.top+r0.height/2);
+    var EAS="cubic-bezier(.2,.8,.2,1)";
+    /* lapisan transparan menangkap jari, jadi tetap menerima gerak walau foto dipindah di DOM */
+    var ov=document.createElement("div");
+    ov.style.cssText="position:fixed;left:0;top:0;right:0;bottom:0;z-index:90;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grabbing;background:transparent";
+    document.body.appendChild(ov);
+    try{ov.setPointerCapture(pid);}catch(x){}
+    box.classList.add("mengatur");
+    w.style.transition=kurang?"none":"scale .18s "+EAS+",box-shadow .18s ease";
     w.classList.add("drag");
-    function skrol(){
-      if(!jalan) return;
-      if(y<90) window.scrollBy(0,-14); else if(y>innerHeight-90) window.scrollBy(0,14);
-      ras=requestAnimationFrame(skrol);
+    w.style.scale="1.04";
+    if(navigator.vibrate){try{navigator.vibrate(10);}catch(x){}}
+    /* foto terangkat selalu menempel ke jari, apa pun posisi aslinya di tata letak */
+    function pasang(){
+      var r=w.getBoundingClientRect();
+      var nx=r.left+r.width/2-tx, ny=r.top+r.height/2-ty;
+      tx=px-ox-nx; ty=py-oy-ny;
+      w.style.transform="translate3d("+tx+"px,"+ty+"px,0)";
     }
-    ras=requestAnimationFrame(skrol);
-    function gerak(e){
-      if(e.pointerId!==pid) return; e.preventDefault(); y=e.clientY;
-      var t=null, st=document.elementsFromPoint(e.clientX,e.clientY);
+    /* foto lain meluncur halus ke tempat barunya (FLIP) */
+    function pindah(t,sebelum){
+      var sib=[].filter.call(box.querySelectorAll(".ph[data-cid]"),function(x){return x!==w;});
+      var lama=sib.map(function(x){return x.getBoundingClientRect();});
+      if(!kurang) sib.forEach(function(x){x.getAnimations().forEach(function(an){if(an.id==="fl") an.cancel();});});
+      if(sebelum) box.insertBefore(w,t); else box.insertBefore(w,t.nextSibling);
+      terakhir=performance.now();
+      pasang();
+      if(kurang||!sib[0]||!sib[0].animate) return;
+      sib.forEach(function(x,i){
+        var b=x.getBoundingClientRect(), dx=lama[i].left-b.left, dy=lama[i].top-b.top;
+        if(Math.abs(dx)<1&&Math.abs(dy)<1) return;
+        var an=x.animate([{transform:"translate("+dx+"px,"+dy+"px)"},{transform:"translate(0,0)"}],{duration:200,easing:EAS});
+        an.id="fl";
+      });
+    }
+    function cek(){
+      if(performance.now()-terakhir<120) return;
+      var t=null, st=document.elementsFromPoint(px,py);
       for(var i=0;i<st.length;i++){var c=st[i].closest&&st[i].closest(".ph[data-cid]"); if(c&&c!==w&&c.parentNode===box){t=c;break;}}
       if(!t) return;
-      var r=t.getBoundingClientRect(), sblm=e.clientY<r.top+r.height/2;
-      if(sblm){ if(w.nextSibling!==t) box.insertBefore(w,t); }
-      else if(t.nextSibling!==w) box.insertBefore(w,t.nextSibling);
+      var r=t.getBoundingClientRect(), mid=r.top+r.height/2, h=r.height*.12;
+      if(w.nextSibling===t){ if(py>mid+h) pindah(t,false); }
+      else if(w.previousSibling===t){ if(py<mid-h) pindah(t,true); }
+      else pindah(t,py<mid);
+    }
+    function putar(){
+      if(!jalan) return;
+      var a=90, kec=0;
+      if(py<a) kec=-Math.ceil((a-py)/a*18); else if(py>innerHeight-a) kec=Math.ceil((py-(innerHeight-a))/a*18);
+      if(kec){window.scrollBy(0,kec); ubah=true;}
+      pasang();
+      if(ubah){ubah=false; cek();}
+      ras=requestAnimationFrame(putar);
+    }
+    ras=requestAnimationFrame(putar);
+    function gerak(e){
+      if(e.pointerId!==pid) return; e.preventDefault();
+      px=e.clientX; py=e.clientY; ubah=true;
     }
     function selesai(e){
-      if(e.pointerId!==pid) return;
+      if(e.pointerId!==pid||!jalan) return;
       jalan=false; cancelAnimationFrame(ras);
-      window.removeEventListener("pointermove",gerak); window.removeEventListener("pointerup",selesai); window.removeEventListener("pointercancel",selesai);
-      w.classList.remove("drag");
+      ov.removeEventListener("pointermove",gerak); ov.removeEventListener("pointerup",selesai); ov.removeEventListener("pointercancel",selesai);
+      try{ov.releasePointerCapture(pid);}catch(x){}
+      if(ov.parentNode) ov.parentNode.removeChild(ov);
       var ids=[].map.call(box.querySelectorAll(".ph[data-cid]"),function(x){return x.getAttribute("data-cid");});
-      CLOUD.order(k,ids);
+      /* mendarat: meluncur ke tempat akhir, bayangan mengecil, baru urutan disimpan */
+      pasang();
+      w.style.transition=kurang?"none":"transform .24s "+EAS+",scale .24s "+EAS+",box-shadow .24s ease";
+      w.style.transform="translate3d(0,0,0)"; w.style.scale="1"; w.style.boxShadow="0 0 0 rgba(60,40,30,0)";
+      setTimeout(function(){
+        w.style.transition=""; w.style.transform=""; w.style.scale=""; w.style.boxShadow=""; w.style.willChange="";
+        w.classList.remove("drag"); box.classList.remove("mengatur");
+        CLOUD.order(k,ids);
+      },kurang?0:260);
     }
-    window.addEventListener("pointermove",gerak,{passive:false}); window.addEventListener("pointerup",selesai); window.addEventListener("pointercancel",selesai);
+    ov.addEventListener("pointermove",gerak,{passive:false}); ov.addEventListener("pointerup",selesai); ov.addEventListener("pointercancel",selesai);
   }
   (function(){var a=document.getElementById("atur"); if(a) a.addEventListener("click",function(){aturMode=!aturMode;list();});})();
   function list(){
