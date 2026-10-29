@@ -187,6 +187,10 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
 .ph button.cv{right:auto;left:6px;font-size:15px;line-height:1;padding:0}
 .sgal .st .x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(60,40,30,.75);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;cursor:pointer}
 .ph button.tg{right:auto;left:40px;font-size:14px;font-weight:700;line-height:1;padding:0}
+.ph .ur{position:absolute;left:6px;right:6px;bottom:6px;display:flex;justify-content:center;gap:6px}
+.ph .ur button{position:static;width:34px;height:34px;font-size:15px;line-height:1;padding:0}
+.ph .ur button::after{inset:-2px}
+.ph .ur button:disabled{opacity:.35;cursor:default}
 .ph img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lb{position:fixed;inset:0;z-index:50;background:rgba(30,20,15,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 12px calc(16px + env(safe-area-inset-bottom,0px));transition:background .3s ease}
 .lb[hidden]{display:none}
@@ -409,7 +413,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
     <button class="b alt emas ikon" id="tokal" type="button" aria-label="Ke kalender" title="Ke kalender" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
   </div>
   <div class="bar"><button class="b alt utama" id="tambah" type="button" hidden>+ Tambah foto / video</button>
-    <button class="b alt utama" id="tlink" type="button" hidden>+ Tambah link video</button></div>
+    <button class="b alt utama" id="tlink" type="button" hidden>+ Tambah link video</button>
+    <button class="b alt utama" id="atur" type="button" hidden>Atur urutan</button></div>
   <div class="photos" id="photos"></div>
 </section>
 <section id="santri" class="panel sant" hidden>
@@ -709,6 +714,17 @@ function mi_() {
   });
   return r;
 }
+// urutan manual foto/video/link per tanggal (UR_tanggal = daftar id dipisah koma)
+function ur_() {
+  const r = {};
+  try {
+    const ap = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(ap).forEach(function (k) {
+      if (/^UR_\d{4}-\d{2}-\d{2}$/.test(k)) r[k.slice(3)] = String(ap[k]).split(',').filter(Boolean);
+    });
+  } catch (e) {}
+  return r;
+}
 function miSet_(sl, ids) {
   const sp = PropertiesService.getScriptProperties(), ap = sp.getProperties(), re = new RegExp('^MI_' + sl + '_\\d+$');
   Object.keys(ap).forEach(function (k) { if (re.test(k)) sp.deleteProperty(k); });
@@ -805,7 +821,7 @@ function doGet(e) {
       const p = {};
       Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
       const sg = santri_();
-      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_(), mc: momenCov_() });
+      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_(), mc: momenCov_(), ur: ur_() });
       cput_('L', js, 600);
       return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1294,6 +1310,14 @@ function doPost(e) {
       miSet_(sl, hasil);
       bust_();
       return out_({ ok: true, i: hasil });
+    }
+    if (b.a === 'ur') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
+      const ids = (Array.isArray(b.i) ? b.i : []).map(String).filter(function (x) { return /^[A-Za-z0-9_-]{10,80}$/.test(x); }).slice(0, 200);
+      const sp = PropertiesService.getScriptProperties();
+      if (ids.length) sp.setProperty('UR_' + b.k, ids.join(',')); else sp.deleteProperty('UR_' + b.k);
+      bust_();
+      return out_({ ok: true });
     }
     if (b.a === 'cov') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
@@ -2203,12 +2227,16 @@ function izinAkun() {
     el.addEventListener("contextmenu",function(e){e.preventDefault();});
     el.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openLb(items,idx,thumbs);}});
   }
+  var aturMode=false, aturK="";
+  (function(){var a=document.getElementById("atur"); if(a) a.addEventListener("click",function(){aturMode=!aturMode;list();});})();
   function list(){
     var k=id(S.y,S.m,S.d), r=repo[k]||[], l=data[k]||[], cl=window.CLOUD?CLOUD.items(k):[]; box.innerHTML="";
+    if(aturK!==k){aturK=k;aturMode=false;}
+    var ab=document.getElementById("atur"); if(ab){ab.hidden=!(window.CLOUD&&CLOUD.owner()&&cl.length>1); if(ab.hidden) aturMode=false; ab.textContent=aturMode?"Selesai mengatur":"Atur urutan";}
     if(!r.length&&!l.length&&!cl.length){box.innerHTML='<p class="empty-msg" style="grid-column:1/-1">Belum ada foto di tanggal ini.</p>';return;}
     var items=r.map(function(f){return ROOT+f;}).concat(l).concat(cl), thumbs=[];
     var cids=window.CLOUD&&CLOUD.ids?CLOUD.ids(k):[];
-    function cell(src,n,del,key,tagFn){
+    function cell(src,n,del,key,tagFn,ci,cn){
       var w=document.createElement("div");w.className="ph";
       var im=document.createElement("img");im.decoding="async";im.alt="Foto "+n;im.tabIndex=0;thumbs[n-1]=im;
       /* ukuran Besar: satu kolom lebar, pakai foto asli agar tetap tajam */
@@ -2235,11 +2263,21 @@ function izinAkun() {
         var tg=document.createElement("button"); tg.type="button"; tg.className="tg"; tg.textContent="#";
         tg.setAttribute("aria-label","Ubah tag santri"); tg.addEventListener("click",tagFn); w.appendChild(tg);
       }
+      if(aturMode&&ci!=null&&window.CLOUD&&CLOUD.owner()&&CLOUD.move){
+        var bar=document.createElement("div"); bar.className="ur";
+        [["\u21c8","Ke paling awal",0],["\u25b2","Naik satu",ci-1],["\u25bc","Turun satu",ci+1],["\u21ca","Ke paling akhir",cn-1]].forEach(function(z){
+          var b=document.createElement("button"); b.type="button"; b.textContent=z[0]; b.setAttribute("aria-label",z[1]);
+          b.disabled=z[2]<0||z[2]>=cn||z[2]===ci;
+          b.addEventListener("click",function(e){e.stopPropagation();CLOUD.move(k,ci,z[2]);});
+          bar.appendChild(b);
+        });
+        w.appendChild(bar);
+      }
       box.appendChild(w);
     }
     r.forEach(function(f,i){cell(ROOT+f,i+1,null,f);});
     l.forEach(function(f,i){cell(f,r.length+i+1,function(){l.splice(i,1);if(!l.length)delete data[k];save();list();renderMonth();});});
-    cl.forEach(function(u,i){cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null,cids[i],CLOUD.editTags?function(){CLOUD.editTags(k,i);}:null);});
+    cl.forEach(function(u,i){cell(u,r.length+l.length+i+1,CLOUD.owner()?function(){CLOUD.del(k,i);}:null,cids[i],CLOUD.editTags?function(){CLOUD.editTags(k,i);}:null,i,cl.length);});
     /* siapkan foto asli pertama di latar belakang agar pratinjau langsung tajam */
     setTimeout(function(){items.slice(0,3).forEach(function(u){var p=new Image();p.decoding="async";p.src=u;});},500);
   }
@@ -3393,6 +3431,12 @@ function izinAkun() {
       if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){}alert("PIN pemilik salah. Samakan PIN di Code.gs (yang sudah di-deploy ulang) dengan PIN mode pemilik, lalu coba lagi.");}
       else alert((j&&j.e)||"Gagal.");
     }
+    function pindah(k,i,j){
+      var a=cm[k]; if(!a||j<0||j>=a.length||i===j) return;
+      if(a.some(function(f){return /^tmp_/.test(f.i);})){alert("Masih mengunggah, tunggu sebentar.");return;}
+      var f=a.splice(i,1)[0]; a.splice(j,0,f); UR[k]=a.map(function(x){return x.i;}); refresh();
+      cpost({a:"ur",pin:PIN,k:k,i:UR[k]},0).then(function(r){if(!r.ok) bad(r);}).catch(function(){alert("Gagal menyimpan urutan.");});
+    }
     function del(k,i){
       if(/^tmp_/.test(cm[k][i].i)){alert("Masih mengunggah, tunggu sebentar.");return;}
       if(!confirm("Hapus dari Drive?")) return;
@@ -4145,7 +4189,7 @@ function izinAkun() {
         else bad(j);
       }).catch(function(){alert("Gagal terhubung.");});
     }
-    window.CLOUD={setMomenCover:setMomenCover,gate:gateDev,dev:renderDev,delMomen:delMomen,pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s; momenMap=buildMomen(); momenUi();}};
+    window.CLOUD={move:pindah,setMomenCover:setMomenCover,gate:gateDev,dev:renderDev,delMomen:delMomen,pre:pre,big:big,isBig:function(u){return !!cbig[u];},keys:function(){return Object.keys(cm);},items:items,ids:ids,setCover:setCover,editTags:editTags,lock:lock,privAt:privAt,delPriv:delPriv,isVideo:function(u){return !!cvid[u];},play:play,del:del,owner:function(){return !!PIN&&!!window.CLOUD_OWNER},santri:function(){santriMap=build();if(sp)sp.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(supl)supl.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdiagB)sdiagB.hidden=!CU||!window.CLOUD_OWNER||!S.s; var sl2=document.getElementById("slink"); if(sl2)sl2.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(skodeB)skodeB.hidden=!CU||!window.CLOUD_OWNER; if(stambahB)stambahB.hidden=!CU||!window.CLOUD_OWNER; if(srenB)srenB.hidden=!CU||!window.CLOUD_OWNER||!S.s; if(sdelB)sdelB.hidden=!CU||!window.CLOUD_OWNER||!S.s; momenMap=buildMomen(); momenUi();}};
     if(!CU) return;
     /* aktifkan/matikan mode pemilik dari dalam aplikasi: ketuk tulisan di bawah judul 5 kali berturut-turut */
     (function(){
@@ -4311,12 +4355,20 @@ function izinAkun() {
       }).catch(function(){alert("Gagal mengunggah.");}).then(function(){sp.disabled=false;sp.textContent="Ganti foto profil";});
     });
     /* Daftar tampil seketika dari cache perangkat (stale-while-revalidate), lalu diperbarui dari server */
+    var UR={};
+    function urut(d){
+      var o=UR[d]; if(!o||!cm[d]) return; var ix={}; o.forEach(function(x,n){ix[x]=n;});
+      var a=cm[d].map(function(f,n){return {f:f,n:n};});
+      a.sort(function(p,q){var x=ix[p.f.i],y=ix[q.f.i]; x=x==null?1e6+p.n:x; y=y==null?1e6+q.n:y; return x-y;});
+      cm[d]=a.map(function(z){return z.f;});
+    }
     function applyList(rs){
-      cm={};cp={};MV={};
+      cm={};cp={};MV={};UR={};
       rs.forEach(function(r){
         if(!r||!r.j) return; var j=r.j;
         Object.keys(j.k||{}).forEach(function(d){cm[d]=cm[d]||[];j.k[d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;cm[d].push(f);});});
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
+        if(r.i===0&&j.ur&&typeof j.ur==="object") UR=j.ur;
         if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
         if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; if(j.mc&&typeof j.mc==="object") MCOV=j.mc; }
         Object.keys(j.mf||{}).forEach(function(sl){
@@ -4324,6 +4376,7 @@ function izinAkun() {
           Object.keys(j.mf[sl]).forEach(function(d){var ar=bx[d]=bx[d]||[]; j.mf[sl][d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;ar.push(f);});});
         });
       });
+      Object.keys(UR).forEach(urut);
       rebuildSantri();
       var pS=false;
       if(S.v==="santri"){
