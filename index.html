@@ -463,6 +463,90 @@ html.kunci{overflow:hidden}
 .dv .akr .ake b{display:block;font-family:inherit;font-weight:800;font-size:.9rem;word-break:break-all}
 .dv .akr .ake small{color:var(--muted);font-size:.75rem;font-weight:700}
 .dv .akr button.b{padding:6px 12px;font-size:.8rem}
+/* ===== Kaca (glass): grid kalender + halaman masuk email ===== */
+:root{--g-bg:linear-gradient(150deg,rgba(255,255,255,.62),rgba(255,255,255,.22));--g-garis:rgba(255,255,255,.7);--g-atas:rgba(255,255,255,.9);--g-bayang:0 1px 2px rgba(90,60,40,.06),0 6px 14px -4px rgba(90,60,40,.12),0 14px 26px -12px rgba(90,60,40,.14);--g-isi:rgba(255,255,255,.38);--g-blur:blur(12px) saturate(175%)}
+@media (prefers-color-scheme:dark){:root{--g-bg:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05));--g-garis:rgba(255,255,255,.2);--g-atas:rgba(255,255,255,.28);--g-bayang:0 1px 2px rgba(0,0,0,.25),0 6px 14px -4px rgba(0,0,0,.3),0 14px 26px -12px rgba(0,0,0,.35);--g-isi:rgba(255,255,255,.08)}}
+.day,.day:not(.has),.day:disabled:not(.has){background:var(--g-bg);border:1px solid var(--g-garis);box-shadow:inset 0 1px 0 var(--g-atas),inset 0 -1px 0 rgba(255,255,255,.14),var(--g-bayang);-webkit-backdrop-filter:var(--g-blur);backdrop-filter:var(--g-blur)}
+.day.today:not(.has){background:linear-gradient(150deg,color-mix(in srgb,var(--today) 42%,rgba(255,255,255,.5)),color-mix(in srgb,var(--today) 14%,rgba(255,255,255,.08)));border-color:color-mix(in srgb,var(--today) 70%,rgba(255,255,255,.6))}
+.day.has{border:2px solid var(--g-garis);-webkit-backdrop-filter:none;backdrop-filter:none}
+.day.has .n{background:rgba(255,255,255,.5);color:#3b2a20;border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.day .c{background:color-mix(in srgb,var(--accent) 55%,rgba(255,255,255,.35));border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+html.trn .day:not(.has){-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.gb{background:radial-gradient(60% 40% at 12% 14%,color-mix(in srgb,var(--accent) 60%,transparent),transparent 70%),radial-gradient(55% 40% at 92% 86%,color-mix(in srgb,var(--today) 50%,transparent),transparent 70%),radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg)}
+.gk{background:var(--g-bg);border:1px solid var(--g-garis);box-shadow:inset 0 1px 0 var(--g-atas),inset 0 -1px 0 rgba(255,255,255,.14),0 2px 4px rgba(90,60,40,.06),0 12px 28px -8px rgba(90,60,40,.16),0 32px 64px -20px rgba(90,60,40,.2);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%)}
+.gk input[type=email],.gk input[type=text]{background:var(--g-isi);border:1px solid var(--g-garis);box-shadow:inset 0 1px 3px rgba(120,80,50,.1)}
+.gk button.b{border:1px solid rgba(255,255,255,.75);-webkit-backdrop-filter:var(--g-blur);backdrop-filter:var(--g-blur)}
+.gk button.b:not(.alt){color:var(--ink);background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 70%,rgba(255,255,255,.6)),color-mix(in srgb,var(--accent) 38%,rgba(255,255,255,.12)));box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 1px 2px color-mix(in srgb,var(--accent) 30%,transparent),0 8px 18px -6px color-mix(in srgb,var(--accent) 55%,transparent)}
+.gk button.b.alt{color:var(--ink);background:var(--g-bg);border-color:var(--g-garis);box-shadow:inset 0 1px 0 var(--g-atas),var(--g-bayang)}
+@media (prefers-color-scheme:dark){.gk button.b:not(.alt){color:#fff;border-color:rgba(255,255,255,.3)}}
+/* ===== Kaca sungguhan + tulisan jelas (grid) ===== */
+.day,.day:not(.has),.day:disabled:not(.has){
+  background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.8) 0%,rgba(255,255,255,0) 46%),linear-gradient(160deg,rgba(255,255,255,.36) 0%,rgba(255,255,255,.08) 55%,rgba(255,255,255,.22) 100%);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.98),inset 1.5px 0 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(120,80,50,.12),inset 0 -8px 14px -8px rgba(255,255,255,.5),var(--g-bayang);
+  -webkit-backdrop-filter:blur(16px) saturate(200%) brightness(1.06);backdrop-filter:blur(16px) saturate(200%) brightness(1.06)}
+.day.today:not(.has){background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 46%),linear-gradient(150deg,color-mix(in srgb,var(--today) 44%,rgba(255,255,255,.45)),color-mix(in srgb,var(--today) 16%,rgba(255,255,255,.08)))}
+.day.has{box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),inset 1.5px 0 0 rgba(255,255,255,.55),inset -1px -1px 0 rgba(0,0,0,.18),var(--g-bayang)}
+.day.has::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;background:radial-gradient(110% 70% at 0% 0%,rgba(255,255,255,.34) 0%,rgba(255,255,255,0) 48%)}
+.day .n{z-index:2}
+.day:not(.has) .n,.day:disabled:not(.has) .n{font-size:1rem;font-weight:800;opacity:1;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.7),0 0 6px rgba(255,255,255,.55)}
+.day.has .n{font-size:.92rem;font-weight:800;background:rgba(255,255,255,.82);color:#2a1d15;border-color:rgba(255,255,255,.9)}
+.day .c{z-index:2;font-weight:800;font-size:.75rem;color:#2a1d15;background:color-mix(in srgb,var(--accent) 70%,rgba(255,255,255,.55));border-color:rgba(255,255,255,.85)}
+.dow{font-weight:800;font-size:.85rem;color:var(--ink);opacity:.8}
+@media (prefers-color-scheme:dark){
+.day,.day:not(.has),.day:disabled:not(.has){
+  background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.26) 0%,rgba(255,255,255,0) 46%),linear-gradient(160deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 55%,rgba(255,255,255,.07) 100%);
+  border-color:rgba(255,255,255,.26);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.42),inset 1.5px 0 0 rgba(255,255,255,.2),inset -1px -1px 0 rgba(0,0,0,.35),inset 0 -8px 14px -8px rgba(255,255,255,.12),var(--g-bayang)}
+.day:not(.has) .n,.day:disabled:not(.has) .n{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.dow{color:#fff;opacity:.85}
+}
+/* ===== Kaca premium: cahaya latar, tepi prisma, pantulan ===== */
+:root{--r1:rgba(200,235,255,.98);--r2:rgba(255,255,255,.12);--r3:rgba(255,225,200,.9);--ob1:color-mix(in srgb,var(--accent) 55%,transparent);--ob2:color-mix(in srgb,var(--today) 45%,transparent);--ob3:rgba(190,170,240,.38)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(45vmax 45vmax at 8% 18%,var(--ob1),transparent 70%),radial-gradient(40vmax 40vmax at 92% 38%,var(--ob2),transparent 70%),radial-gradient(42vmax 42vmax at 22% 82%,var(--ob3),transparent 70%),radial-gradient(38vmax 38vmax at 88% 92%,var(--ob1),transparent 70%)}
+.day::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;padding:1.3px;background:conic-gradient(from 200deg at 50% 50%,var(--r1),var(--r2) 24%,var(--r3) 50%,var(--r2) 76%,var(--r1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.day:not(.has)::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;background:linear-gradient(118deg,transparent 26%,rgba(255,255,255,.4) 35%,rgba(255,255,255,.08) 44%,transparent 52%),radial-gradient(80% 60% at 100% 100%,rgba(255,255,255,.32),transparent 70%)}
+@media (prefers-color-scheme:dark){
+:root{--r1:rgba(170,215,255,.7);--r2:rgba(255,255,255,.05);--r3:rgba(255,200,170,.55);--ob1:color-mix(in srgb,var(--accent) 38%,transparent);--ob2:color-mix(in srgb,var(--today) 30%,transparent);--ob3:rgba(150,120,230,.3)}
+.day:not(.has)::after{background:linear-gradient(118deg,transparent 26%,rgba(255,255,255,.2) 35%,rgba(255,255,255,.04) 44%,transparent 52%),radial-gradient(80% 60% at 100% 100%,rgba(255,255,255,.12),transparent 70%)}
+}
+/* ===== Kaca lebih nyata: warna latar, tepi bergradasi, pantulan ganda ===== */
+.cal{isolation:isolate}
+.cal::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(38% 20% at 12% 14%,rgba(255,166,112,.6),transparent 70%),radial-gradient(40% 22% at 92% 36%,rgba(120,196,244,.6),transparent 70%),radial-gradient(42% 20% at 22% 70%,rgba(255,146,186,.45),transparent 70%),radial-gradient(40% 22% at 88% 92%,rgba(176,150,255,.42),transparent 70%)}
+.day::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.12) 32%,rgba(255,255,255,.04) 66%,rgba(255,255,255,.85) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.day,.day:not(.has),.day:disabled:not(.has){background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.8) 0%,rgba(255,255,255,0) 46%),radial-gradient(90% 65% at 100% 100%,rgba(255,255,255,.34) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 55%,rgba(255,255,255,.2) 100%)}
+.day.has::after{background:radial-gradient(110% 70% at 0% 0%,rgba(255,255,255,.34) 0%,rgba(255,255,255,0) 48%),radial-gradient(80% 55% at 100% 100%,rgba(255,255,255,.2) 0%,rgba(255,255,255,0) 55%)}
+@media (prefers-color-scheme:dark){
+.cal::before{background:radial-gradient(38% 20% at 12% 14%,rgba(255,150,90,.3),transparent 70%),radial-gradient(40% 22% at 92% 36%,rgba(90,170,230,.32),transparent 70%),radial-gradient(42% 20% at 22% 70%,rgba(230,110,160,.24),transparent 70%),radial-gradient(40% 22% at 88% 92%,rgba(140,120,240,.26),transparent 70%)}
+.day,.day:not(.has),.day:disabled:not(.has){background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.26) 0%,rgba(255,255,255,0) 46%),radial-gradient(90% 65% at 100% 100%,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.03) 55%,rgba(255,255,255,.06) 100%)}
+.day::before{background:linear-gradient(135deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,.08) 32%,rgba(255,255,255,.03) 66%,rgba(255,255,255,.45) 100%)}
+}
+/* ===== Semua kaca bening mewah ===== */
+:root{--g-bg:linear-gradient(150deg,rgba(255,255,255,.5),rgba(255,255,255,.14));--g-garis:rgba(255,246,224,.85);--g-atas:rgba(255,252,240,.98);--g-isi:rgba(255,255,255,.3);--blobs:radial-gradient(60% 34% at 8% 8%,rgba(255,170,115,.5),transparent 70%),radial-gradient(55% 32% at 96% 30%,rgba(124,198,242,.5),transparent 70%),radial-gradient(60% 34% at 14% 72%,rgba(255,150,190,.38),transparent 70%),radial-gradient(60% 34% at 92% 96%,rgba(176,150,255,.36),transparent 70%)}
+@media (prefers-color-scheme:dark){:root{--g-bg:linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.03));--g-garis:rgba(255,226,160,.26);--g-atas:rgba(255,236,190,.4);--g-isi:rgba(255,255,255,.07);--blobs:radial-gradient(60% 34% at 8% 8%,rgba(255,150,90,.28),transparent 70%),radial-gradient(55% 32% at 96% 30%,rgba(90,170,230,.3),transparent 70%),radial-gradient(60% 34% at 14% 72%,rgba(230,110,160,.22),transparent 70%),radial-gradient(60% 34% at 92% 96%,rgba(140,120,240,.24),transparent 70%)}}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--blobs)}
+.yv{background:var(--blobs),var(--bg)}
+.mc,.pk .card,.sant .kartu,.sgal .sb,.dv .kd{background:radial-gradient(120% 70% at 0% 0%,rgba(255,255,255,.6),rgba(255,255,255,0) 48%),var(--g-bg);border:1px solid var(--g-garis);box-shadow:inset 0 1.5px 0 var(--g-atas),inset 1px 0 0 rgba(255,255,255,.5),inset -1px -1px 0 rgba(120,80,50,.1),var(--g-bayang);-webkit-backdrop-filter:blur(18px) saturate(190%) brightness(1.05);backdrop-filter:blur(18px) saturate(190%) brightness(1.05)}
+#mpsel,.dv textarea,.dv .akf input{background:var(--g-isi);border:1px solid var(--g-garis);box-shadow:inset 0 1px 3px rgba(120,80,50,.1);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.uk{background:var(--g-isi);border:1px solid var(--g-garis);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.uk button[aria-pressed="true"]{background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.8),rgba(255,255,255,.25));box-shadow:inset 0 1px 0 var(--g-atas),0 2px 6px rgba(90,60,40,.16)}
+.mpbar{background:var(--g-isi);border-top:1px solid var(--g-garis);border-radius:22px 22px 0 0;padding-left:12px;padding-right:12px;-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%)}
+button.b{border:1px solid rgba(255,255,255,.78);-webkit-backdrop-filter:var(--g-blur);backdrop-filter:var(--g-blur)}
+button.b:not(.alt):not(.ins){color:var(--ink);background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.55),rgba(255,255,255,0) 50%),linear-gradient(150deg,color-mix(in srgb,var(--accent) 68%,rgba(255,255,255,.55)),color-mix(in srgb,var(--accent) 36%,rgba(255,255,255,.1)));box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.2),0 1px 2px color-mix(in srgb,var(--accent) 30%,transparent),0 8px 18px -6px color-mix(in srgb,var(--accent) 55%,transparent)}
+button.b.alt,button.b.ins{color:var(--ink);background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.55),rgba(255,255,255,0) 50%),var(--g-bg);border-color:var(--g-garis);box-shadow:inset 0 1px 0 var(--g-atas),var(--g-bayang)}
+@media (prefers-color-scheme:dark){
+.mc,.pk .card,.sant .kartu,.sgal .sb,.dv .kd{background:radial-gradient(120% 70% at 0% 0%,rgba(255,255,255,.2),rgba(255,255,255,0) 48%),var(--g-bg);box-shadow:inset 0 1.5px 0 var(--g-atas),inset 1px 0 0 rgba(255,255,255,.18),inset -1px -1px 0 rgba(0,0,0,.35),var(--g-bayang)}
+.uk button[aria-pressed="true"]{background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.3),rgba(255,255,255,.1));color:#fff}
+button.b{border-color:rgba(255,226,160,.32)}
+button.b:not(.alt):not(.ins){color:#fff;background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.28),rgba(255,255,255,0) 50%),linear-gradient(150deg,color-mix(in srgb,var(--accent) 55%,rgba(0,0,0,.3)),color-mix(in srgb,var(--accent) 28%,rgba(255,255,255,.04)));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3),0 8px 18px -6px color-mix(in srgb,var(--accent) 45%,transparent)}
+button.b.alt,button.b.ins{background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.2),rgba(255,255,255,0) 50%),var(--g-bg)}
+}
+@media (prefers-reduced-transparency:reduce){.mc,.pk .card,.sant .kartu,.sgal .sb,.dv .kd,.mpbar,.uk,button.b,#mpsel,.dv textarea,.dv .akf input{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
+@media (prefers-color-scheme:dark){
+.day.today:not(.has){background:radial-gradient(120% 85% at 0% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 46%),linear-gradient(150deg,color-mix(in srgb,var(--today) 40%,rgba(255,255,255,.05)),color-mix(in srgb,var(--today) 14%,rgba(255,255,255,.03)));border-color:color-mix(in srgb,var(--today) 60%,rgba(255,255,255,.2))}
+.gk button.b:not(.alt){background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 55%,rgba(0,0,0,.3)),color-mix(in srgb,var(--accent) 28%,rgba(255,255,255,.04)));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3),0 8px 18px -6px color-mix(in srgb,var(--accent) 45%,transparent)}
+}
+@media (prefers-reduced-transparency:reduce){.day,.day:not(.has),.gk,.gk button.b,.gk input[type=email],.gk input[type=text]{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
 </style>
 </head>
 <body>
