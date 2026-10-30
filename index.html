@@ -430,9 +430,231 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .dv .bh span{color:var(--muted);font-size:.75rem;font-weight:700}
 .dv .bh button.b{padding:6px 14px}
 .dv textarea{display:block;width:100%;height:220px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto;-webkit-user-select:text;user-select:text;touch-action:pan-x pan-y}
+/* ===== Gerbang masuk (email + kode) ===== */
+html.kunci body>*:not(.gb){visibility:hidden}
+html.kunci{overflow:hidden}
+.gb{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto;background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg)}
+.gb[hidden]{display:none}
+.gk{width:min(380px,100%);margin:auto;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px 18px 18px;box-shadow:0 12px 40px rgba(120,80,50,.22);text-align:center;animation:pop .3s var(--mulus)}
+.gk h2{touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin:0 0 6px;font-family:"Fraunces",Georgia,serif;font-size:1.7rem;font-weight:600;letter-spacing:-.01em}
+.gk .gp{margin:0 0 14px;color:var(--muted);font-size:.9rem;line-height:1.5}
+.gk .gcek{padding:18px 0;color:var(--muted);font-weight:700}
+.gk form{display:flex;flex-direction:column;gap:10px}
+.gk form[hidden],.gk .gcek[hidden]{display:none}
+.gk input[type=email],.gk input[type=text]{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);text-align:center;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+.gk input#gc{font-size:1.6rem;font-weight:800;letter-spacing:.35em;text-indent:.35em}
+.gk input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.gk .gs{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
+.gk .gs input{width:20px;height:20px;flex:none;accent-color:var(--today)}
+.gk .gr{display:flex;gap:8px}
+.gk .gr .b{flex:1;padding:8px 10px;font-size:.85rem}
+.gk button:disabled{opacity:.55;cursor:default}
+.gk .gm{min-height:1.4em;margin:12px 0 0;font-size:.85rem;font-weight:700;color:#b3402a;line-height:1.45}
+.gk .gm.ok{color:var(--ink)}
+@media (prefers-color-scheme:dark){.gk .gm{color:#ff9d85}}
+/* kartu Akses email (tab Pemilik) */
+.dv .akf{display:flex;gap:8px;flex-wrap:nowrap}
+.dv .akf input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);-webkit-user-select:text;user-select:text}
+.dv .akr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+.dv .akr .ake{flex:1 1 170px;min-width:0}
+.dv .akr .ake b{display:block;font-family:inherit;font-weight:800;font-size:.9rem;word-break:break-all}
+.dv .akr .ake small{color:var(--muted);font-size:.75rem;font-weight:700}
+.dv .akr button.b{padding:6px 12px;font-size:.8rem}
 </style>
 </head>
 <body>
+<div class="gb" id="gb" role="dialog" aria-modal="true" aria-label="Masuk Album SWTQIS-10">
+  <div class="gk">
+    <h2 id="gjudul">Album SWTQIS-10</h2>
+    <p class="gp" id="gp">Album ini terkunci. Masukkan email antum untuk meminta kode masuk.</p>
+    <div class="gcek" id="gcek" hidden>Memeriksa akses…</div>
+    <form id="gf1" novalidate>
+      <input id="ge" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="email@contoh.com" aria-label="Alamat email">
+      <label class="gs"><input id="gsimpan" type="checkbox"> <span>Simpan di perangkat ini (tidak perlu kode lagi)</span></label>
+      <button class="b" id="gk1" type="submit">Kirim kode</button>
+    </form>
+    <form id="gf2" novalidate hidden>
+      <input id="gc" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="Kode 6 angka">
+      <button class="b" id="gk2" type="submit">Masuk</button>
+      <div class="gr"><button class="b alt" id="gulang" type="button">Kirim ulang kode</button><button class="b alt" id="gganti" type="button">Ganti email</button></div>
+    </form>
+    <p class="gm" id="gm" role="alert"></p>
+  </div>
+</div>
+<script>
+/* Gerbang masuk: album hanya terbuka bagi email yang disetujui pemilik. Semua permintaan ke Drive menunggu sampai token akses ada. */
+(function(){
+  var RK="album-akses", PK="album-pin", EK="album-akses-e", html=document.documentElement;
+  var URLS=(window.CLOUD_URLS||[]).filter(Boolean), U0=URLS[0]||window.CLOUD_URL||"";
+  var gb=document.getElementById("gb");
+  if(!U0){gb.hidden=true;return;}
+  function $(i){return document.getElementById(i);}
+  var gcek=$("gcek"),gf1=$("gf1"),gf2=$("gf2"),gp=$("gp"),gm=$("gm"),ge=$("ge"),gc=$("gc"),gs=$("gsimpan"),gk1=$("gk1"),gk2=$("gk2"),gul=$("gulang"),ggn=$("gganti");
+  var CFG="Pemilik belum mengatur RAHASIA di Code.gs. Hubungi pemilik.";
+  var UPD="Pemilik belum memperbarui Code.gs (versi 6) dan deploy ulang.";
+  var BELUM="Email antum belum terdaftar oleh pemilik.";
+  var A={t:"",tx:0}, rdy, rdyRes, busy=null, terbuka=false, emailNow="", sibuk=false;
+  function newReady(){rdy=new Promise(function(r){rdyRes=r;});}
+  newReady();
+  var _f=window.fetch.bind(window);
+  function isCloud(s){for(var i=0;i<URLS.length;i++) if(s.indexOf(URLS[i])===0) return true; return false;}
+  function post(o){return _f(U0,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)}).then(function(r){return r.json();});}
+  function load(){
+    var st=[localStorage,sessionStorage];
+    for(var i=0;i<2;i++){try{var v=JSON.parse(st[i].getItem(RK)||"null"); if(v&&typeof v==="object") return v;}catch(e){}}
+    return null;
+  }
+  function simpanRec(o,keep){
+    try{
+      var a=keep?localStorage:sessionStorage, b=keep?sessionStorage:localStorage;
+      a.setItem(RK,JSON.stringify(o)); b.removeItem(RK);
+    }catch(e){}
+  }
+  function hapusRec(){try{localStorage.removeItem(RK);sessionStorage.removeItem(RK);}catch(e){}}
+  function expOf(t){return parseInt(String(t).split(".")[0],36)||0;}
+  function setTok(t){
+    A.t=t; A.tx=expOf(t);
+    var rec=load(); if(!rec) return;
+    var keep=false; try{keep=!!localStorage.getItem(RK);}catch(e){}
+    rec.t=t; rec.tx=A.tx; simpanRec(rec,keep);
+  }
+  function ownerPin(){try{return window.CLOUD_OWNER?(localStorage.getItem(PK)||""):"";}catch(e){return "";}}
+  /* hasil: "ok" | "ditolak" | "config" | "galat" (jaringan/server lama: jangan mengunci) */
+  function renew(){
+    var pin=ownerPin(), rec=load();
+    function viaR(){
+      if(!rec||!rec.r) return Promise.resolve("ditolak");
+      return post({a:"at",r:rec.r}).then(function(j){
+        if(j&&j.ok&&j.t){setTok(j.t);return "ok";}
+        if(j&&j.e==="kadaluarsa") return "ditolak";
+        if(j&&j.e==="config") return "config";
+        return "galat";
+      },function(){return "galat";});
+    }
+    if(pin) return post({a:"ao",pin:pin}).then(function(j){
+      if(j&&j.ok&&j.t){simpanRec({o:1,t:j.t,tx:expOf(j.t)},true);A.t=j.t;A.tx=expOf(j.t);return "ok";}
+      if(j&&j.e==="config") return "config";
+      if(j&&j.e==="pin") return viaR();
+      return "galat";
+    },function(){return "galat";});
+    return viaR();
+  }
+  function ensure(){
+    if(A.t&&A.tx-Date.now()>120000) return Promise.resolve();
+    if(busy) return busy;
+    busy=renew().then(function(r){
+      busy=null;
+      if(r==="ditolak") kunciUlang("Akses antum sudah berakhir. Silakan masuk lagi.");
+      else if(r==="config") kunciUlang(CFG);
+    },function(){busy=null;});
+    return busy;
+  }
+  window.fetch=function(u,o){
+    var s=typeof u==="string"?u:((u&&u.url)||"");
+    if(!s||!isCloud(s)) return _f(u,o);
+    var m=(o&&o.method==="POST"&&typeof o.body==="string")?/^\{"a":"([a-z]+)"/.exec(o.body):null, a=m?m[1]:"";
+    if(a==="ak"||a==="av"||a==="at"||a==="ao") return _f(u,o);
+    return rdy.then(ensure).then(function(){return rdy;}).then(function(){
+      var u2=u,o2=o;
+      if(o&&o.method==="POST"){
+        if(a==="ck"||a==="plk"||a==="bk"||a==="fk"||a==="frk"||a==="lp"){
+          try{var j=JSON.parse(o.body); j.t=A.t; o2=Object.assign({},o,{body:JSON.stringify(j)});}catch(e){}
+        }
+      }else u2=s+(s.indexOf("?")>=0?"&":"?")+"t="+encodeURIComponent(A.t);
+      return _f(u2,o2);
+    });
+  };
+  function msg(t,ok){gm.textContent=t||"";gm.className="gm"+(ok?" ok":"");}
+  function langkah(n){
+    gcek.hidden=n!==0; gf1.hidden=n!==1; gf2.hidden=n!==2;
+    gp.textContent=n===0?"":(n===1?"Album ini terkunci. Masukkan email antum untuk meminta kode masuk.":"Masukkan kode 6 angka yang dikirim ke email antum.");
+  }
+  function form(m){
+    gb.hidden=false; langkah(1); msg(m||"");
+    try{var e0=localStorage.getItem(EK); if(e0&&!ge.value){ge.value=e0;gs.checked=true;}}catch(e){}
+  }
+  function buka(){
+    terbuka=true; html.classList.remove("kunci"); gb.hidden=true; gc.value=""; msg("");
+    rdyRes();
+  }
+  function kunciUlang(m){
+    if(terbuka){terbuka=false;newReady();}
+    A.t="";A.tx=0;hapusRec();html.classList.add("kunci");form(m);
+  }
+  function setSibuk(on,btn,t){
+    sibuk=on; [gk1,gk2,gul,ggn].forEach(function(b){b.disabled=on;});
+    if(btn){if(on){btn.dataset.t=btn.textContent;btn.textContent=t;}else if(btn.dataset.t) btn.textContent=btn.dataset.t;}
+  }
+  function pesanGalat(j){
+    var e=j&&j.e;
+    return e==="belum"?BELUM:
+      e==="tunggu"?"Tunggu 1 menit sebelum meminta kode lagi.":
+      e==="kirim"?"Kode gagal dikirim ke email. Coba lagi sebentar lagi.":
+      e==="config"?CFG:
+      e==="pin"?UPD:
+      e==="email"?"Masukkan alamat email yang benar.":
+      e==="habis"?"Kode sudah kedaluwarsa atau percobaan habis. Kirim ulang kode.":
+      e==="salah"?"Kode salah"+(j&&j.sisa>=0?". Sisa percobaan: "+j.sisa+".":"."):
+      "Gagal: "+(e||"tidak diketahui");
+  }
+  function kirim(ulang){
+    if(sibuk) return;
+    var em=ulang?emailNow:ge.value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msg("Masukkan alamat email yang benar.");return;}
+    var btn=ulang?gul:gk1; setSibuk(true,btn,"Mengirim…"); msg("");
+    post({a:"ak",e:em}).then(function(j){
+      if(j&&j.ok){emailNow=em;langkah(2);gc.value="";msg("Kode dikirim ke "+em+". Berlaku 10 menit. Cek juga folder spam.",true);gc.focus();return;}
+      msg(pesanGalat(j));
+    }).catch(function(){msg("Tidak bisa terhubung. Periksa internet lalu coba lagi.");}).then(function(){setSibuk(false,btn);});
+  }
+  function masuk(){
+    if(sibuk) return;
+    var c=gc.value.replace(/\D/g,"");
+    if(c.length!==6){msg("Masukkan kode 6 angka.");return;}
+    setSibuk(true,gk2,"Memeriksa…"); msg("");
+    var keep=!!gs.checked;
+    post({a:"av",e:emailNow,c:c,s:keep?1:0}).then(function(j){
+      if(j&&j.ok&&j.r&&j.t){
+        simpanRec({r:j.r,t:j.t,tx:expOf(j.t)},keep); A.t=j.t; A.tx=expOf(j.t);
+        try{if(keep) localStorage.setItem(EK,emailNow); else localStorage.removeItem(EK);}catch(e){}
+        buka(); return;
+      }
+      msg(pesanGalat(j)); if(j&&(j.e==="habis")) gc.value="";
+    }).catch(function(){msg("Tidak bisa terhubung. Periksa internet lalu coba lagi.");}).then(function(){setSibuk(false,gk2);});
+  }
+  gf1.addEventListener("submit",function(e){e.preventDefault();kirim(false);});
+  gf2.addEventListener("submit",function(e){e.preventDefault();masuk();});
+  gul.addEventListener("click",function(){kirim(true);});
+  ggn.addEventListener("click",function(){langkah(1);msg("");ge.focus();});
+  gc.addEventListener("input",function(){gc.value=gc.value.replace(/\D/g,"").slice(0,6);});
+  /* mode pemilik: ketuk judul 5 kali berturut-turut, lalu masukkan PIN */
+  var jn=0, jt=0;
+  $("gjudul").addEventListener("click",function(){
+    clearTimeout(jt); jn++; jt=setTimeout(function(){jn=0;},1500);
+    if(jn<5) return; jn=0;
+    var p=prompt("Masukkan PIN pemilik"); if(!p) return;
+    post({a:"ao",pin:p}).then(function(j){
+      if(j&&j.ok&&j.t){
+        try{localStorage.setItem("album-owner","1");localStorage.setItem(PK,p);}catch(e){}
+        simpanRec({o:1,t:j.t,tx:expOf(j.t)},true); location.reload(); return;
+      }
+      msg(j&&j.e==="config"?CFG:"PIN pemilik salah, atau Code.gs belum diperbarui (versi 6) dan di-deploy ulang.");
+    }).catch(function(){msg("Tidak bisa terhubung. Periksa internet lalu coba lagi.");});
+  });
+  /* mulai: token tersimpan yang masih berlaku langsung membuka; selain itu perbarui, atau tampilkan layar kunci */
+  var rec=load(), pin=ownerPin();
+  if(rec&&rec.o&&!pin){hapusRec();rec=null;}
+  if(rec&&rec.t&&rec.tx-Date.now()>120000){A.t=rec.t;A.tx=rec.tx;buka();}
+  else if(pin||(rec&&rec.r)){
+    html.classList.add("kunci"); gb.hidden=false; langkah(0);
+    renew().then(function(r){
+      if(r==="ok"||r==="galat") buka();
+      else if(r==="config") form(CFG);
+      else{hapusRec();form("Akses antum sudah berakhir. Silakan masuk lagi.");}
+    });
+  }else{html.classList.add("kunci");form();}
+})();
+</script>
 <main id="home">
   <header>
     <div class="nav">
@@ -484,12 +706,20 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <div class="list" id="mlist"></div>
 </section>
 <section id="dev" class="panel" hidden>
-  <h2>File developer</h2>
-  <p class="addr">Khusus pemilik. Salin atau unduh berkas aplikasi untuk dipasang di Apps Script dan hosting.</p>
+  <h2>Pemilik</h2>
+  <p class="addr">Khusus pemilik. Atur email yang boleh masuk, serta salin atau unduh berkas aplikasi untuk dipasang di Apps Script dan hosting.</p>
   <div class="dv">
+    <div class="kd" id="aksesk">
+      <h3>Akses email</h3>
+      <p>Album terkunci. Hanya email yang disetujui di sini yang bisa meminta kode masuk. Pemilik tetap masuk dengan PIN pemilik.</p>
+      <div class="bar akf"><input id="ake" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="email@contoh.com" aria-label="Email yang disetujui"><button class="b alt utama" id="akadd" type="button">Setujui</button></div>
+      <p id="aknote"></p>
+      <div class="bh"><b>Daftar email</b><span id="akjml"></span></div>
+      <div id="aklist"></div>
+    </div>
     <div class="kd">
       <h3>Code.gs</h3>
-      <p>Dibagi 3 bagian. Tempel Bagian 1, 2, lalu 3 berurutan tanpa jeda, dalam satu berkas Code.gs. Ganti PIN dan NAMA_AKUN, lalu deploy ulang.</p>
+      <p>Dibagi 4 bagian. Tempel Bagian 1, 2, 3, lalu 4 berurutan tanpa jeda, dalam satu berkas Code.gs. Ganti PIN dan NAMA_AKUN, lalu deploy ulang.</p>
       <div class="bar">
         <button class="b alt utama" id="dvcall" type="button">Salin semua</button>
         <button class="b alt" id="dvdlgs" type="button">Unduh Code.gs</button>
@@ -505,6 +735,10 @@ button.b.alt.emas.ikon[hidden]{display:none}
       <div class="bag">
         <div class="bh"><b>Bagian 3</b><span id="dvn3"></span><button class="b" id="dvc3" type="button">Salin</button></div>
         <textarea id="dvp3" readonly spellcheck="false" aria-label="Code.gs bagian 3"></textarea>
+      </div>
+      <div class="bag">
+        <div class="bh"><b>Bagian 4</b><span id="dvn4"></span><button class="b" id="dvc4" type="button">Salin</button></div>
+        <textarea id="dvp4" readonly spellcheck="false" aria-label="Code.gs bagian 4"></textarea>
       </div>
     </div>
     <div class="kd">
@@ -548,7 +782,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
   <button class="b" id="tabsantri" role="tab" aria-selected="false">Santri</button>
   <button class="b" id="tabgaleri" role="tab" aria-selected="false">Galeri</button>
   <button class="b" id="tabmomen" role="tab" aria-selected="false">Momen</button>
-  <button class="b" id="tabdev" role="tab" aria-selected="false">File developer</button>
+  <button class="b" id="tabdev" role="tab" aria-selected="false">Pemilik</button>
 </div></nav>
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Pratinjau foto">
   <img id="lbimg" alt="">
@@ -616,6 +850,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
    (YouTube, Vimeo, Google Drive, TikTok, Instagram, Facebook, dsb). Alamat link disimpan di sini,
    tidak pernah ditampilkan atau dikirim lewat daftar; hanya diberikan ke pemutar di dalam app.
 
+   Versi 6: album terkunci; masuk lewat email yang disetujui pemilik + kode 6 angka (lihat GERBANG AKSES EMAIL).
    Tambahan: daftar santri bisa diubah dari app (tambah, ubah nama, hapus) lewat aksi 'sn' dan 'sd'.
    Disimpan di Script Properties akun pertama: N_slug = nama santri, X_slug = santri yang dihapus. */
 
@@ -848,6 +1083,7 @@ function potong_(id, o, l) {
 function doGet(e) {
   const a = e.parameter.a;
   try {
+    if (!aksesOk_(e.parameter.t)) return out_({ e: 'kunci' });   // gerbang email: tanpa token akses yang sah, tidak ada data keluar
     if (a === 'l') {
       const cached = cget_('L');
       if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
@@ -971,6 +1207,135 @@ function bacaKode_(b) {
     return out_(potong_(String(b.i), b.o, b.l));
   }
   return out_({ ok: false, e: 'aksi tidak dikenal' });
+}
+
+// ===== GERBANG AKSES EMAIL (versi 6) =====
+// Album hanya terbuka bagi email yang disetujui pemilik. Pengunjung meminta kode 6 angka (berlaku 10 menit,
+// sekali pakai, berbeda tiap permintaan) yang dikirim ke emailnya, lalu mendapat token. Semua aksi baca
+// menolak permintaan tanpa token yang sah. Daftar email disetujui ada di Script Properties akun pertama
+// (E_<hash> = email); perangkat yang disimpan: R_<hash> = {e, x}. Akun lain hanya memeriksa tanda tangan token.
+const RAHASIA = 'GANTI-RAHASIA-INI';   // <-- ganti dengan teks acak minimal 16 karakter, SAMA di semua akun
+const AKSES_JAM = 6;                    // masa berlaku token akses (jam); diperbarui otomatis oleh app
+
+function hex_(b) { return b.map(function (x) { return ('0' + (x & 255).toString(16)).slice(-2); }).join(''); }
+function sha_(s) { return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8)); }
+function hmac_(s) { return hex_(Utilities.computeHmacSha256Signature(String(s), RAHASIA)); }
+// selama RAHASIA belum diganti, gerbang menolak semua (token bisa dipalsukan oleh siapa pun yang membaca berkas publik)
+function rahasiaOk_() { return RAHASIA.length >= 16 && RAHASIA.indexOf('GANTI') !== 0; }
+function emailBersih_(e) {
+  e = String(e || '').trim().toLowerCase();
+  return (e.length <= 120 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(e)) ? e : '';
+}
+function ekey_(e) { return sha_(e).slice(0, 32); }
+function aksesBuat_() {
+  const x = Date.now() + AKSES_JAM * 3600000;
+  return x.toString(36) + '.' + hmac_('a|' + x).slice(0, 32);
+}
+function aksesOk_(t) {
+  if (!rahasiaOk_()) return false;
+  const m = /^([a-z0-9]{6,12})\.([a-f0-9]{32})$/.exec(String(t || ''));
+  if (!m) return false;
+  const x = parseInt(m[1], 36);
+  return x > Date.now() && hmac_('a|' + x).slice(0, 32) === m[2];
+}
+function kodeAcak_() {
+  const n = parseInt(Utilities.getUuid().replace(/-/g, '').slice(0, 8), 16) % 1000000;
+  return ('00000' + n).slice(-6);
+}
+
+// ak = minta kode, av = periksa kode (+ simpan perangkat), at = perbarui token dari perangkat tersimpan, ao = token pemilik (PIN)
+function gerbang_(b) {
+  const sp = PropertiesService.getScriptProperties();
+  if (b.a === 'ao') {
+    if (b.pin !== PIN) { Utilities.sleep(800); return out_({ ok: false, e: 'pin' }); }
+    if (!rahasiaOk_()) return out_({ ok: false, e: 'config' });
+    return out_({ ok: true, t: aksesBuat_() });
+  }
+  if (!rahasiaOk_()) return out_({ ok: false, e: 'config' });
+  if (b.a === 'at') {
+    const k = 'R_' + sha_(String(b.r || '')).slice(0, 32), v = sp.getProperty(k);
+    if (!v) return out_({ ok: false, e: 'kadaluarsa' });
+    let o = null; try { o = JSON.parse(v); } catch (x) {}
+    if (!o || o.x < Date.now() || !sp.getProperty('E_' + o.e)) { sp.deleteProperty(k); return out_({ ok: false, e: 'kadaluarsa' }); }
+    return out_({ ok: true, t: aksesBuat_() });
+  }
+  const em = emailBersih_(b.e);
+  if (!em) return out_({ ok: false, e: 'email' });
+  const eh = ekey_(em), ca = CacheService.getScriptCache();
+  if (!sp.getProperty('E_' + eh)) return out_({ ok: false, e: 'belum' });   // email belum disetujui pemilik
+  if (b.a === 'ak') {
+    if (ca.get('RL_' + eh)) return out_({ ok: false, e: 'tunggu' });
+    const kode = kodeAcak_();
+    try {
+      MailApp.sendEmail({
+        to: em, name: 'Album SWTQIS-10', subject: 'Kode masuk Album SWTQIS-10',
+        body: 'Kode masuk Album SWTQIS-10 antum:\n\n' + kode + '\n\nKode berlaku 10 menit dan hanya bisa dipakai sekali. Jangan bagikan kode ini kepada siapa pun.\nJika antum tidak meminta kode ini, abaikan saja email ini.'
+      });
+    } catch (x) { return out_({ ok: false, e: 'kirim' }); }
+    ca.put('OTP_' + eh, JSON.stringify({ h: sha_(kode + '|' + eh + '|' + RAHASIA), n: 0 }), 600);
+    ca.put('RL_' + eh, '1', 60);
+    return out_({ ok: true });
+  }
+  if (b.a === 'av') {
+    const raw = ca.get('OTP_' + eh), c = String(b.c || '').replace(/\D/g, '');
+    if (!raw) return out_({ ok: false, e: 'habis' });
+    let o = null; try { o = JSON.parse(raw); } catch (x) {}
+    if (!o || o.n >= 5) { ca.remove('OTP_' + eh); return out_({ ok: false, e: 'habis' }); }
+    if (c.length !== 6 || sha_(c + '|' + eh + '|' + RAHASIA) !== o.h) {
+      o.n++;
+      if (o.n >= 5) ca.remove('OTP_' + eh); else ca.put('OTP_' + eh, JSON.stringify(o), 600);
+      Utilities.sleep(600);
+      return out_({ ok: false, e: o.n >= 5 ? 'habis' : 'salah', sisa: Math.max(0, 5 - o.n) });
+    }
+    ca.remove('OTP_' + eh);
+    // bersihkan perangkat yang sudah kedaluwarsa
+    const ap = sp.getProperties(), now = Date.now();
+    Object.keys(ap).forEach(function (k) {
+      if (k.indexOf('R_') !== 0) return;
+      try { if (JSON.parse(ap[k]).x < now) sp.deleteProperty(k); } catch (x) { sp.deleteProperty(k); }
+    });
+    // simpan = 90 hari; tanpa simpan = 1 hari (di app, tersimpan hanya selama tab terbuka)
+    const tok = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, ''), x = now + (b.s ? 90 : 1) * 86400000;
+    sp.setProperty('R_' + sha_(tok).slice(0, 32), JSON.stringify({ e: eh, x: x }));
+    return out_({ ok: true, r: tok, t: aksesBuat_() });
+  }
+  return out_({ ok: false, e: 'aksi tidak dikenal' });
+}
+
+// Khusus pemilik (PIN): al = daftar email, aa = setujui email, ar = cabut perangkat tersimpan, ad = hapus email (+ cabut perangkat)
+function aksesPemilik_(b) {
+  const sp = PropertiesService.getScriptProperties();
+  if (b.a === 'aa') {
+    const em = emailBersih_(b.e);
+    if (!em) return out_({ ok: false, e: 'Alamat email tidak valid' });
+    sp.setProperty('E_' + ekey_(em), em);
+    return out_({ ok: true });
+  }
+  const ap = sp.getProperties(), now = Date.now(), jml = {}, daftar = [];
+  Object.keys(ap).forEach(function (k) {
+    if (k.indexOf('E_') === 0) daftar.push({ h: k.slice(2), e: ap[k] });
+    else if (k.indexOf('R_') === 0) {
+      let o = null; try { o = JSON.parse(ap[k]); } catch (x) {}
+      if (!o || o.x < now) { sp.deleteProperty(k); return; }
+      jml[o.e] = (jml[o.e] || 0) + 1;
+    }
+  });
+  if (b.a === 'al') {
+    daftar.sort(function (p, q) { return p.e < q.e ? -1 : (p.e > q.e ? 1 : 0); });
+    return out_({ ok: true, m: daftar.map(function (d) { return { e: d.e, n: jml[d.h] || 0 }; }) });
+  }
+  const em = emailBersih_(b.e);
+  if (!em) return out_({ ok: false, e: 'Alamat email tidak valid' });
+  const eh = ekey_(em);
+  Object.keys(ap).forEach(function (k) {
+    if (k.indexOf('R_') !== 0) return;
+    try { if (JSON.parse(ap[k]).e === eh) sp.deleteProperty(k); } catch (x) {}
+  });
+  if (b.a === 'ad') {
+    sp.deleteProperty('E_' + eh);
+    try { CacheService.getScriptCache().removeAll(['OTP_' + eh, 'RL_' + eh]); } catch (x) {}
+  }
+  return out_({ ok: true });
 }
 
 // ===== VIDEO LINK =====
@@ -1106,13 +1471,24 @@ function putar_(b) {
 function doPost(e) {
   try {
     const b = JSON.parse(e.postData.contents);
-    // pembacaan oleh santri/pengunjung memakai PIN santri; semua aksi lain butuh PIN pemilik
-    if (b.a === 'ck' || b.a === 'plk' || b.a === 'bk' || b.a === 'fk' || b.a === 'frk') return bacaKode_(b);
-    if (b.a === 'lp') return putar_(b);
+    // gerbang email: minta kode, periksa kode, perbarui token, token pemilik
+    if (b.a === 'ak' || b.a === 'av' || b.a === 'at' || b.a === 'ao') return gerbang_(b);
+    // pembacaan oleh santri/pengunjung memakai PIN santri + token akses; semua aksi lain butuh PIN pemilik
+    if (b.a === 'ck' || b.a === 'plk' || b.a === 'bk' || b.a === 'fk' || b.a === 'frk') {
+      if (!aksesOk_(b.t)) return out_({ ok: false, e: 'kunci' });
+      return bacaKode_(b);
+    }
+    if (b.a === 'lp') {
+      if (!aksesOk_(b.t)) return out_({ ok: false, e: 'kunci' });
+      return putar_(b);
+    }
     if (b.pin !== PIN) return out_({ ok: false, e: 'pin' });
 
     // pemeriksaan PIN dari index.html (tombol mode pemilik)
     if (b.a === 'cek') return out_({ ok: true });
+
+    // kelola email yang disetujui (khusus pemilik)
+    if (b.a === 'al' || b.a === 'aa' || b.a === 'ar' || b.a === 'ad') return aksesPemilik_(b);
 
     if (b.a === 'up') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
@@ -1387,6 +1763,7 @@ function doPost(e) {
 function izinAkun() {
   DriveApp.getRootFolder();
   UrlFetchApp.fetch('https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg');
+  MailApp.getRemainingDailyQuota();   // izin kirim email (kode masuk)
 }
 </script>
 <script>
@@ -2963,7 +3340,7 @@ function izinAkun() {
     if(gv){document.title="Album SWTQIS-10 · Galeri";renderGaleri();}
     if(ml){document.title="Album SWTQIS-10 \u00b7 Momen";renderMomenList();}
     if(md){renderMomenDetail(S.s);}
-    if(dv){document.title="Album SWTQIS-10 · File developer"; if(window.CLOUD&&CLOUD.dev) CLOUD.dev();}
+    if(dv){document.title="Album SWTQIS-10 · Pemilik"; if(window.CLOUD&&CLOUD.dev) CLOUD.dev();}
     if(sd){
       var nm=santriBySlug(S.s);
       document.getElementById("sdnama").textContent=nm;
@@ -4306,7 +4683,7 @@ function izinAkun() {
       }).catch(function(){btn.disabled=false; btn.textContent=t0; alert("Gagal terhubung.");});
     }
     /* ===== Tab File developer (khusus pemilik): Code.gs dibagi 2 bagian, index.html ===== */
-    var DEV={p1:"",p2:"",p3:"",all:"",html:null,loading:false};
+    var DEV={p1:"",p2:"",p3:"",p4:"",all:"",html:null,loading:false};
     function gateDev(ok){
       if(PIN){ok();return;}
       var p=prompt("Masukkan PIN pemilik"); if(!p) return;
@@ -4331,15 +4708,17 @@ function izinAkun() {
     }
     function kb(t){return (t.length/1024).toFixed(0)+" KB";}
     function renderDev(){
+      aksMuat();
       var el=document.getElementById("kodegs"); if(!el) return;
       if(!DEV.all){
-        var full=el.textContent, i1=full.indexOf("// ===== VIDEO LINK ====="), i2=full.indexOf("function doPost(e) {");
-        if(i1<0||i2<=i1){i1=Math.floor(full.length/3); i2=Math.floor(full.length*2/3);}
+        var full=el.textContent, i0=full.indexOf("// ===== GERBANG AKSES EMAIL"), i1=full.indexOf("// ===== VIDEO LINK ====="), i2=full.indexOf("function doPost(e) {");
+        if(i0<0||i1<=i0||i2<=i1){i0=Math.floor(full.length/4); i1=Math.floor(full.length/2); i2=Math.floor(full.length*3/4);}
         DEV.all=full;
-        DEV.p1=full.slice(0,i1).replace(/\s+$/,"")+"\n";
-        DEV.p2=full.slice(i1,i2).replace(/\s+$/,"")+"\n";
-        DEV.p3=full.slice(i2);
-        [1,2,3].forEach(function(q){
+        DEV.p1=full.slice(0,i0).replace(/\s+$/,"")+"\n";
+        DEV.p2=full.slice(i0,i1).replace(/\s+$/,"")+"\n";
+        DEV.p3=full.slice(i1,i2).replace(/\s+$/,"")+"\n";
+        DEV.p4=full.slice(i2);
+        [1,2,3,4].forEach(function(q){
           document.getElementById("dvp"+q).value=DEV["p"+q];
           document.getElementById("dvn"+q).textContent=DEV["p"+q].split("\n").length+" baris";
         });
@@ -4357,6 +4736,63 @@ function izinAkun() {
         DEV.loading=false; inf.textContent="Gagal memuat index.html. Buka tab ini lagi untuk mencoba.";
       });
     }
+    /* ===== Akses email (pemilik): daftar email yang boleh meminta kode masuk ===== */
+    function aksNote(t){var n=document.getElementById("aknote"); if(n) n.textContent=t||"";}
+    function aksGalat(j){
+      if(j&&j.e==="pin"){PIN="";try{localStorage.removeItem("album-pin");}catch(e){} aksNote("PIN pemilik salah. Buka lagi tab ini untuk memasukkan PIN."); return;}
+      if(j&&j.e==="aksi tidak dikenal") aksNote("Perbarui Code.gs (versi 6) di Apps Script lalu deploy ulang dulu.");
+      else aksNote((j&&j.e)||"Gagal.");
+    }
+    function aksRender(list){
+      var box=document.getElementById("aklist"); if(!box) return; box.innerHTML="";
+      document.getElementById("akjml").textContent=list.length?list.length+" email":"";
+      if(!list.length){var p=document.createElement("p"); p.textContent="Belum ada email yang disetujui. Selama daftar ini kosong, tidak ada yang bisa meminta kode masuk."; box.appendChild(p); return;}
+      list.forEach(function(x){
+        var r=document.createElement("div"), t=document.createElement("div"), em=document.createElement("b"), sm=document.createElement("small");
+        var b1=document.createElement("button"), b2=document.createElement("button");
+        r.className="akr"; t.className="ake";
+        em.textContent=x.e; sm.textContent=x.n?x.n+" perangkat tersimpan":"Belum ada perangkat tersimpan";
+        t.appendChild(em); t.appendChild(sm);
+        b1.type="button"; b1.className="b alt"; b1.textContent="Cabut perangkat"; b1.disabled=!x.n;
+        b1.addEventListener("click",function(){
+          if(!confirm("Cabut semua perangkat tersimpan milik "+x.e+"?\n\nUntuk masuk lagi, ia perlu meminta kode baru. Akses yang sedang berjalan habis dalam beberapa jam.")) return;
+          aksKirim({a:"ar",e:x.e},"Perangkat dicabut");
+        });
+        b2.type="button"; b2.className="b alt"; b2.textContent="Hapus";
+        b2.addEventListener("click",function(){
+          if(!confirm("Hapus "+x.e+" dari daftar email yang disetujui?\n\nEmail ini tidak bisa meminta kode lagi dan perangkat tersimpannya dicabut.")) return;
+          aksKirim({a:"ad",e:x.e},"Email dihapus");
+        });
+        r.appendChild(t); r.appendChild(b1); r.appendChild(b2); box.appendChild(r);
+      });
+    }
+    function aksMuat(){
+      if(!CU||!PIN||!document.getElementById("aklist")) return;
+      cpost({a:"al",pin:PIN},0).then(function(j){
+        if(j&&j.ok){aksNote(""); aksRender(j.m||[]); return;}
+        aksGalat(j);
+      }).catch(function(){aksNote("Gagal terhubung.");});
+    }
+    function aksKirim(o,ok){
+      if(!ensurePin()) return;
+      o.pin=PIN;
+      cpost(o,0).then(function(j){
+        if(j&&j.ok){toast(ok); aksMuat(); return;}
+        aksGalat(j);
+      }).catch(function(){aksNote("Gagal terhubung.");});
+    }
+    (function(){
+      var b=document.getElementById("akadd"), i=document.getElementById("ake");
+      if(!b||!i) return;
+      function tambah(){
+        var v=i.value.trim().toLowerCase();
+        if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(v)){aksNote("Masukkan alamat email yang benar."); return;}
+        aksKirim({a:"aa",e:v},"Email disetujui");
+        i.value="";
+      }
+      b.addEventListener("click",tambah);
+      i.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();tambah();}});
+    })();
     function ids(k){return (cm[k]||[]).map(function(f){return f.i;});}
     /* simpan sampul tanggal di akun pertama (Code.gs aksi "cov"); gagal = tampilan tetap seperti semula */
     function setCover(k,v){
@@ -4406,6 +4842,7 @@ function izinAkun() {
       bind("dvc1",function(){renderDev(); salinTeks(DEV.p1,hasil);});
       bind("dvc2",function(){renderDev(); salinTeks(DEV.p2,hasil);});
       bind("dvc3",function(){renderDev(); salinTeks(DEV.p3,hasil);});
+      bind("dvc4",function(){renderDev(); salinTeks(DEV.p4,hasil);});
       bind("dvcall",function(){renderDev(); salinTeks(DEV.all,hasil);});
       bind("dvdlgs",function(){
         renderDev();
