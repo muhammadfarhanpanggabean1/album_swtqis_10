@@ -206,6 +206,10 @@ html[data-uk="3"] .sgal .sg.big .st:first-child{grid-column:auto;grid-row:auto}
 /* ===== Animasi tekan: memantul kecil untuk semua tombol (tombol .b sudah punya efek tekan sendiri) ===== */
 /* selama zoom masuk/keluar halaman tanggal: blur kaca diperkecil agar tidak dihitung ulang berat di tiap frame */
 html.trn .tabs,html.trn .uk,html.trn .yg,html.trn .badge,html.trn .sgal .sc,html.trn #mback,html.trn .sant .stat{-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+/* bilah kontrol pemutar video: turun saat disembunyikan */
+.ytb{transition:transform .32s var(--mulus),opacity .26s var(--mulus)}
+.ytb.turun{transform:translateY(100%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.ytb{transition:none}}
 @keyframes tekan{0%{scale:1}35%{scale:.88}70%{scale:1.05}100%{scale:1}}
 .tkn{animation:tekan .34s cubic-bezier(.3,.7,.4,1)}
 @media (prefers-reduced-motion:reduce){.tkn{animation:none}}
@@ -3405,7 +3409,7 @@ function izinAkun() {
       var cover=document.createElement("div");
       cover.style.cssText="position:absolute;inset:0;z-index:2;background:transparent;touch-action:manipulation";
       cover.addEventListener("contextmenu",function(e){e.preventDefault();});
-      var bar=document.createElement("div");
+      var bar=document.createElement("div"); bar.className="ytb";
       bar.style.cssText="position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:22px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font:600 .85rem system-ui,sans-serif";
       function mk(t,lab){var b=document.createElement("button");b.type="button";b.className="yg";b.textContent=t;b.setAttribute("aria-label",lab);return b;}
       var SV='<svg viewBox="0 0 24 24" aria-hidden="true">', IPL=SV+'<path d="M8 5.5v13l11-6.5z"/></svg>', IPA=SV+'<rect x="6.5" y="5" width="3.8" height="14" rx="1.2"/><rect x="13.7" y="5" width="3.8" height="14" rx="1.2"/></svg>',
@@ -3432,8 +3436,18 @@ function izinAkun() {
         /* sebelum video pernah mulai: lubang kecil di tombol putar bawaan YouTube agar ketukan pertama asli (bukan skrip) */
         cover.style.clipPath=cover.style.webkitClipPath=(st.s===-1||st.s===5)?HOLE:"none";
         bq.textContent=(want==="auto")?"Auto":(LBL[qNow]||LBL[want]||"Auto");
+        if(st.s!==lastS2){lastS2=st.s; if(st.s===1||st.s===3) armar(); else {barOff=false; bar.classList.remove("turun"); clearTimeout(barT);}}
       }
       function toggle(){cmd((st.s===1||st.s===3)?"pauseVideo":"playVideo");}
+      /* bilah kontrol: satu ketukan di video memunculkan/menurunkannya; turun sendiri 3 detik setelah sentuhan terakhir saat video berputar */
+      var barT=0, barOff=false, lastS2=-9, tapT=0;
+      function barTurun(){ if(st.s===-1||st.s===5) return; barOff=true; bar.classList.add("turun"); clearTimeout(barT); }
+      function armar(){
+        clearTimeout(barT); if(!(st.s===1||st.s===3)) return;
+        barT=setTimeout(function(){ if(dead) return; if(drag||qm){armar();return;} barTurun(); },3000);
+      }
+      function barNaik(){ barOff=false; bar.classList.remove("turun"); armar(); }
+      function ketuk(){ if(barOff) barNaik(); else barTurun(); }
       bp.addEventListener("click",toggle);
       bk.addEventListener("click",function(){lompat(-1);}); mj.addEventListener("click",function(){lompat(1);});
       /* ketuk dua kali di sepertiga kiri/kanan: mundur/maju 10 detik. Ketukan pertama di sisi tidak melakukan apa pun.
@@ -3456,11 +3470,12 @@ function izinAkun() {
       }
       cover.addEventListener("click",function(e){
         var r=cover.getBoundingClientRect(), x=r.width?(e.clientX-r.left)/r.width:0.5, side=x<0.33?-1:(x>0.67?1:0), now=Date.now();
-        if(side===0){lastT=0;chainUntil=0;toggle();return;}
-        if(lastS===side&&(now<chainUntil||now-lastT<300)){lompat(side);chainUntil=now+600;lastT=now;}
-        else{lastS=side;lastT=now;chainUntil=0;}
+        if(side===0){lastT=0;chainUntil=0;clearTimeout(tapT);ketuk();return;}
+        if(lastS===side&&(now<chainUntil||now-lastT<300)){clearTimeout(tapT);lompat(side);chainUntil=now+600;lastT=now;armar();}
+        else{lastS=side;lastT=now;chainUntil=0;clearTimeout(tapT);tapT=setTimeout(ketuk,260);}
       });
-      cleanup.push(function(){clearTimeout(fbT);});
+      cleanup.push(function(){clearTimeout(fbT);clearTimeout(barT);clearTimeout(tapT);});
+      bar.addEventListener("pointerdown",armar); bar.addEventListener("pointerup",armar);
       bm.addEventListener("click",function(){cmd(st.m?"unMute":"mute"); st.m=!st.m; upd();});
       bf.addEventListener("click",function(){
         var d=document.fullscreenElement||document.webkitFullscreenElement;
