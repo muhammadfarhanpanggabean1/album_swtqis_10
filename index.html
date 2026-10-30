@@ -44,7 +44,8 @@ try{
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;700;800&display=swap"></noscript>
 <style>
 :root{
   --mulus:cubic-bezier(.22,.8,.3,1);
@@ -547,6 +548,8 @@ button.b.alt,button.b.ins{background:radial-gradient(120% 90% at 0% 0%,rgba(255,
 .gk button.b:not(.alt){background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 55%,rgba(0,0,0,.3)),color-mix(in srgb,var(--accent) 28%,rgba(255,255,255,.04)));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3),0 8px 18px -6px color-mix(in srgb,var(--accent) 45%,transparent)}
 }
 @media (prefers-reduced-transparency:reduce){.day,.day:not(.has),.gk,.gk button.b,.gk input[type=email],.gk input[type=text]{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
+/* ===== Performa: blur hanya di tempat yang ada isi di belakangnya ===== */
+.day,.day .c,.day.has .n,.mc,.sant .kartu,.sgal .sb,.dv .kd,#mpsel,.dv textarea,.dv .akf input,.uk,button.b,.gk,.gk input[type=email],.gk input[type=text],.gk button.b,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 </style>
 </head>
 <body>
@@ -2839,7 +2842,7 @@ function izinAkun() {
         im.src=src;
         if(window.CLOUD&&CLOUD.isBig(src)) CLOUD.big(src,function(b){im.src=b;});
       }else setThumb(im,src);
-      if(n>8)im.loading="lazy";
+      if(n>8)im.loading="lazy"; im.decoding="async";
       function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
       im.addEventListener("load",fit);longPress(im,items,n-1,thumbs);w.appendChild(im);if(im.complete)fit();
       if(del){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Hapus foto "+n);x.addEventListener("click",del);w.appendChild(x);}
@@ -2951,7 +2954,7 @@ function izinAkun() {
       var lab=diff>0?diff+" tahun lalu":"Tahun "+f.y;
       b.type="button";
       b.setAttribute("aria-label",lab+" ("+f.y+"), "+f.l.length+" foto");
-      var im=document.createElement("img"); im.alt=""; im.loading="lazy"; setThumb(im,f.l[0]);
+      var im=document.createElement("img"); im.alt=""; im.loading="lazy"; im.decoding="async"; setThumb(im,f.l[0]);
       b.appendChild(im);
       if(f.l.length>1){var c=document.createElement("span");c.className="c";c.textContent=f.l.length;b.appendChild(c);}
       var t=document.createElement("span"); t.className="lbl"; t.textContent=lab+" \u00b7 "+f.y; b.appendChild(t);
@@ -2977,7 +2980,7 @@ function izinAkun() {
       b.type="button"; b.className="kartu"; b.setAttribute("aria-label",n);
       av.className="av"; av.textContent=initials(n);
       if(santriMap[s]&&santriMap[s].profil){
-        var im=document.createElement("img"); im.alt="Foto "+n; im.loading="lazy"; im.draggable=false;
+        var im=document.createElement("img"); im.alt="Foto "+n; im.loading="lazy"; im.decoding="async"; im.draggable=false;
         im.addEventListener("load",function(){
           av.className="av ada";
           /* poster 9:16 yang belum dipangkas workflow: tampilkan 18%-59% tinggi, rasio kartu 5:4 di tengah: banner dan latar kosong atas terbuang di sisi aplikasi */
@@ -3069,7 +3072,7 @@ function izinAkun() {
       items.forEach(function(src,i){
         var b=document.createElement("button"), im=document.createElement("img"), t=santriThumb(src);
         b.type="button"; b.className="st"; b.setAttribute("aria-label",(isV[i]?"Putar video ":"Buka foto ")+(i+1)+" dari "+items.length+", "+d+" "+BULAN[m-1]+" "+y);
-        im.alt=""; im.loading="lazy"; im.draggable=false; thumbs[i]=im;
+        im.alt=""; im.loading="lazy"; im.decoding="async"; im.draggable=false; thumbs[i]=im;
         if(t!==src) im.addEventListener("error",function f(){im.removeEventListener("error",f);im.src=src;});
         im.src=t;
         b.addEventListener("click",function(){openLb(items,i,thumbs);});
@@ -3132,7 +3135,7 @@ function izinAkun() {
       items.forEach(function(src,i){
         var b=document.createElement("button"), im=document.createElement("img");
         b.type="button"; b.className="st"; b.setAttribute("aria-label","Buka foto "+(i+1)+" dari "+items.length+", "+d+" "+BULAN[m-1]+" "+y);
-        im.alt=""; im.loading="lazy"; im.draggable=false; thumbs[i]=im; setThumb(im,src);
+        im.alt=""; im.loading="lazy"; im.decoding="async"; im.draggable=false; thumbs[i]=im; setThumb(im,src);
         b.addEventListener("click",function(){openLb(items,i,thumbs);});
         b.appendChild(im);
         if(window.CLOUD&&CLOUD.isVideo(src)){b.setAttribute("aria-label","Buka video "+(i+1)+" dari "+items.length+", "+d+" "+BULAN[m-1]+" "+y); b.insertAdjacentHTML("beforeend",'<i class="pb" aria-hidden="true">\u25B6</i>');}
@@ -3166,7 +3169,7 @@ function izinAkun() {
       b.type="button"; b.className="kartu"; b.setAttribute("aria-label",nm0);
       av.className="av"; av.textContent=initials(nm0);
       if(e.cover&&e.cover.indexOf("data:image/gif")!==0){
-        var im=document.createElement("img"); im.alt=""; im.loading="lazy"; im.draggable=false;
+        var im=document.createElement("img"); im.alt=""; im.loading="lazy"; im.decoding="async"; im.draggable=false;
         im.addEventListener("load",function(){av.className="av ada";});
         im.addEventListener("error",function(){im.remove();});
         im.dataset.peek=e.cover;
@@ -3209,7 +3212,7 @@ function izinAkun() {
       im.src=src;
       if(window.CLOUD&&CLOUD.isBig(src)) CLOUD.big(src,function(b){im.src=b;});
     }else setThumb(im,src);
-    if(n>8) im.loading="lazy";
+    if(n>8) im.loading="lazy"; im.decoding="async";
     function fit(){if(im.naturalWidth){im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;w.classList.add("ld");}}
     im.addEventListener("load",fit); longPress(im,items,n-1,thumbs); w.appendChild(im); if(im.complete) fit();
     if(delFn){var x=document.createElement("button");x.textContent="\u00d7";x.setAttribute("aria-label","Keluarkan dari momen "+n);x.addEventListener("click",delFn);w.appendChild(x);}
