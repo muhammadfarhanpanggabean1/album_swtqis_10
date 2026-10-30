@@ -310,7 +310,7 @@ main,.panel{padding-bottom:96px}
 .sgal .yr2:first-child{margin-top:0}
 .sgal .yr2 b{font-family:"Fraunces",Georgia,serif;font-size:2.2rem;font-weight:600;letter-spacing:-.01em;line-height:1}
 .sgal .yr2 small{color:var(--muted);font-weight:800;font-size:.8rem}
-.sgal .sb{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 12px 12px;box-shadow:0 6px 20px rgba(210,140,100,.16)}
+.sgal .sb{contain:layout style;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 12px 12px;box-shadow:0 6px 20px rgba(210,140,100,.16)}
 .sgal .sh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px 12px}
 .sgal .sd{display:flex;align-items:center;gap:10px;min-width:0}
 .sgal .tg{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:46px;height:50px;border-radius:14px;background:var(--accent-soft);line-height:1}
@@ -378,7 +378,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
 #lbclose{color:#e2c077;background:rgba(255,255,255,.08);border-color:#b8964f}
 /* ===== Ubin foto: kilau saat memuat, memudar masuk, dan kartu rapi bila gagal dimuat ===== */
 @keyframes kilau{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.ph:not(.ld):not(.gagal),.sgal .st:not(.ok):not(.gagal){background:linear-gradient(100deg,var(--accent-soft) 30%,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)) 50%,var(--accent-soft) 70%);background-size:200% 100%;animation:kilau 1.6s linear infinite}
+.ph:not(.ld):not(.gagal),.sgal .st:not(.ok):not(.gagal){background:linear-gradient(100deg,var(--accent-soft) 30%,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)) 50%,var(--accent-soft) 70%);background-size:200% 100%;animation:kilau 1.6s linear 6}
 .ph img{opacity:0}
 .ph.ld img{opacity:1}
 .ph.ld img.ghost{opacity:.22}
@@ -504,7 +504,7 @@ html.trn .day:not(.has){-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4
 }
 /* ===== Kaca premium: cahaya latar, tepi prisma, pantulan ===== */
 :root{--r1:rgba(200,235,255,.98);--r2:rgba(255,255,255,.12);--r3:rgba(255,225,200,.9);--ob1:color-mix(in srgb,var(--accent) 55%,transparent);--ob2:color-mix(in srgb,var(--today) 45%,transparent);--ob3:rgba(190,170,240,.38)}
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(45vmax 45vmax at 8% 18%,var(--ob1),transparent 70%),radial-gradient(40vmax 40vmax at 92% 38%,var(--ob2),transparent 70%),radial-gradient(42vmax 42vmax at 22% 82%,var(--ob3),transparent 70%),radial-gradient(38vmax 38vmax at 88% 92%,var(--ob1),transparent 70%)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;transform:translateZ(0);background:radial-gradient(45vmax 45vmax at 8% 18%,var(--ob1),transparent 70%),radial-gradient(40vmax 40vmax at 92% 38%,var(--ob2),transparent 70%),radial-gradient(42vmax 42vmax at 22% 82%,var(--ob3),transparent 70%),radial-gradient(38vmax 38vmax at 88% 92%,var(--ob1),transparent 70%)}
 .day::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;padding:1.3px;background:conic-gradient(from 200deg at 50% 50%,var(--r1),var(--r2) 24%,var(--r3) 50%,var(--r2) 76%,var(--r1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
 .day:not(.has)::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;background:linear-gradient(118deg,transparent 26%,rgba(255,255,255,.4) 35%,rgba(255,255,255,.08) 44%,transparent 52%),radial-gradient(80% 60% at 100% 100%,rgba(255,255,255,.32),transparent 70%)}
 @media (prefers-color-scheme:dark){
@@ -3673,7 +3673,8 @@ function izinAkun() {
         renderMonth();
       }catch(e){}
     }
-    function soon(){clearTimeout(rt);rt=setTimeout(refresh,150);}
+    var lastScr=0; window.addEventListener('scroll',function(){lastScr=performance.now();},{passive:true});
+    function soon(){clearTimeout(rt);rt=setTimeout(function(){if(performance.now()-lastScr<180){soon();return;}refresh();},150);}
     function loadGroup(g,oi){
       return Promise.all(g.map(function(x){return cacheGet(x).then(function(b){if(b){cb[x]=URL.createObjectURL(b);return null;}return x;});})).then(function(miss){
         miss=miss.filter(Boolean); if(!miss.length) return;
