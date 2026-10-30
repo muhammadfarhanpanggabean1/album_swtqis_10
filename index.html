@@ -270,7 +270,7 @@ main,.panel{padding-bottom:96px}
 .tabs{--k-bg:linear-gradient(150deg,rgba(255,255,255,.66),rgba(255,255,255,.26));--k-garis:rgba(255,255,255,.7);--k-atas:rgba(255,255,255,.9);--k-bayang:0 12px 32px rgba(120,80,50,.24),0 2px 6px rgba(120,80,50,.12);
   position:fixed;left:14px;right:14px;max-width:420px;margin:0 auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;padding:0;overflow:hidden;border-radius:32px;
   background:var(--k-bg);border:1px solid var(--k-garis);box-shadow:inset 0 1px 0 var(--k-atas),inset 0 -1px 0 rgba(255,255,255,.18),var(--k-bayang);
-  -webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%)}
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 @media (prefers-color-scheme:dark){.tabs{--k-bg:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05));--k-garis:rgba(255,255,255,.2);--k-atas:rgba(255,255,255,.28);--k-bayang:0 12px 32px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3)}}
 .tabs[hidden]{display:none}
 .tabs .tgulir{position:relative;flex:1;min-width:0;display:flex;gap:4px;padding:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x}
@@ -529,6 +529,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;tr
 @media (prefers-reduced-transparency:reduce){.day,.day:not(.has),.gk,.gk button.b,.gk input[type=email],.gk input[type=text]{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
 /* ===== Performa: blur hanya di tempat yang ada isi di belakangnya ===== */
 .day,.day .c,.day.has .n,.mc,.sant .kartu,.sgal .sb,.dv .kd,#mpsel,.dv textarea,.dv .akf input,.uk,button.b,.gk,.gk input[type=email],.gk input[type=text],.gk button.b,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html .sgal .sc{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* geser bulan: grid dipromosikan ke layer GPU */
+.cal.moving .grid{will-change:transform,opacity}
 </style>
 </head>
 <body>
@@ -2139,6 +2142,7 @@ function izinAkun() {
     document.title="Album SWTQIS-10 \u00b7 "+BULAN[m-1]+" "+y;
   }
   function renderMonth(){
+    PRE={};
     var t=fillGrid(grid,S.y,S.m);
     setMeta(S.y,S.m);
     grid.setAttribute("aria-label","Kalender "+BULAN[S.m-1]+" "+S.y);
@@ -2153,9 +2157,19 @@ function izinAkun() {
   function mClamp(v){return Math.max(MIN,Math.min(MAX,v));}
   var mActive=false, mPos=0, mVel=0, mTgt=null, mRaf=0, mW=0, mShown=0, mDragged=false;
   var panes=[{el:grid,k:null,h:0},{el:ghost,k:null,h:0}];
+  var PRE={};
+  function preBuild(){
+    if(S.v||S.d||mActive) return;
+    var base=mIdx(S.y,S.m);
+    [1,-1].forEach(function(o){
+      var k=base+o; if(k<MIN||k>MAX||PRE[k]) return;
+      var d=document.createElement("div"); fillGrid(d,Math.floor(k/12),k%12+1); PRE[k]=d;
+    });
+  }
   function paneFill(p,k){
-    var y=Math.floor(k/12),m=k%12+1;
-    fillGrid(p.el,y,m);
+    var y=Math.floor(k/12),m=k%12+1, pc=PRE[k];
+    if(pc){ delete PRE[k]; p.el.innerHTML=""; while(pc.firstChild) p.el.appendChild(pc.firstChild); }
+    else fillGrid(p.el,y,m);
     p.el.setAttribute("aria-label","Kalender "+BULAN[m-1]+" "+y);
     p.k=k; p.h=p.el.offsetHeight;
   }
@@ -2201,12 +2215,17 @@ function izinAkun() {
     cancelAnimationFrame(mRaf);
     target=Math.round(mClamp(target));
     var y=Math.floor(target/12),m=target%12+1;
-    var keep=(panes[0].k===target);
+    var keep=(panes[0].k===target), fg=(!keep&&panes[1].k===target);
     if(y!==S.y||m!==S.m){
       rep(y+"/"+m);
       S={y:y,m:m,d:null}; saveMonth();
     }
     mReset();
+    if(fg){
+      while(grid.firstChild) grid.removeChild(grid.firstChild);
+      while(ghost.firstChild) grid.appendChild(ghost.firstChild);
+      grid.setAttribute("aria-label","Kalender "+BULAN[S.m-1]+" "+S.y); keep=true;
+    }
     if(keep){ setMeta(S.y,S.m); totalEl.textContent=countMonth(S.y,S.m)+" foto"; }
     else renderMonth();
     warm();
@@ -2859,6 +2878,7 @@ function izinAkun() {
   function warm(){
     clearTimeout(warmT);
     warmT=setTimeout(function(){
+      (window.requestIdleCallback||setTimeout)(preBuild);
       var base=mIdx(S.y,S.m), q=[];
       [1,-1,2,-2].forEach(function(o){
         var k=base+o; if(k<MIN||k>MAX) return;
@@ -3662,6 +3682,7 @@ function izinAkun() {
       return m;
     }
     function refresh(){
+      PRE={};
       if(!lb.hidden) return;
       try{
         santriMap=build(); momenMap=buildMomen(); if(PK2.open) pickRender();
@@ -3674,7 +3695,7 @@ function izinAkun() {
       }catch(e){}
     }
     var lastScr=0; window.addEventListener('scroll',function(){lastScr=performance.now();},{passive:true});
-    function soon(){clearTimeout(rt);rt=setTimeout(function(){if(performance.now()-lastScr<180){soon();return;}refresh();},150);}
+    function soon(){if(rt)return;rt=setTimeout(function(){rt=0;if(performance.now()-lastScr<180){soon();return;}refresh();},S.v==='galeri'?700:250);}
     function loadGroup(g,oi){
       return Promise.all(g.map(function(x){return cacheGet(x).then(function(b){if(b){cb[x]=URL.createObjectURL(b);return null;}return x;});})).then(function(miss){
         miss=miss.filter(Boolean); if(!miss.length) return;
