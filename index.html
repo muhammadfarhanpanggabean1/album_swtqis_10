@@ -7,6 +7,10 @@
 <title>Habit Tracker</title>
 <meta name="theme-color" content="#0b0d12">
 <link rel="manifest" href="manifest.webmanifest">
+<script>
+  window.__tunda = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__tunda = e; });
+</script>
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -694,6 +698,7 @@
     transition: transform 0.15s ease;
   }
   .ki-tombol:active { transform: scale(0.97); }
+  .ki-tombol:disabled { opacity: 0.65; cursor: progress; }
   .ki-tombol:focus-visible, .ki-tutup:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   .ki-panduan {
     grid-column: 1 / -1; margin: 8px 0 0; padding-top: 10px;
@@ -1940,7 +1945,7 @@
   });
 
   /* ---------- Instal aplikasi ---------- */
-  var tundaInstal = null, kartuDitutup = false;
+  var tundaInstal = window.__tunda || null, kartuDitutup = false, tungguInstal = false, tmrInstal = null;
   function sudahTerpasang() {
     try {
       if (navigator.standalone) return true;
@@ -1955,18 +1960,32 @@
     document.getElementById('banner-instal').hidden = t;
     document.getElementById('kartu-instal').hidden = t || kartuDitutup;
   }
-  function panduanInstal() {
+  function perangkatIos() {
     var ua = navigator.userAgent || '';
-    var ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    return ios
-      ? 'Di Safari, ketuk ikon Bagikan, lalu pilih \u201cTambah ke Layar Utama\u201d.'
-      : 'Buka menu browser (titik tiga), lalu pilih \u201cInstal aplikasi\u201d atau \u201cTambahkan ke layar utama\u201d.';
+    return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function labelInstal(teks) {
+    document.querySelectorAll('[data-instal]').forEach(function (b) { b.textContent = teks; b.disabled = teks !== 'Instal'; });
+  }
+  function pesanInstal(teks) {
+    document.querySelectorAll('.ki-panduan').forEach(function (p) { p.textContent = teks; p.hidden = !teks; });
+  }
+  function jalankanInstal() {
+    var ev = tundaInstal;
+    if (!ev) return;
+    tundaInstal = null; tungguInstal = false; clearTimeout(tmrInstal);
+    labelInstal('Instal'); pesanInstal('');
+    try {
+      ev.prompt();
+      if (ev.userChoice) ev.userChoice.then(segarkanInstal, segarkanInstal);
+    } catch (err) {}
   }
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     tundaInstal = e;
     try { localStorage.removeItem('app-terpasang'); } catch (err) {}
     segarkanInstal();
+    if (tungguInstal) jalankanInstal();
   });
   window.addEventListener('appinstalled', function () {
     tundaInstal = null;
@@ -1975,19 +1994,21 @@
   });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-instal]');
-    if (!b) return;
-    var kotak = b.closest('.kaca-instal'), p = kotak && kotak.querySelector('.ki-panduan');
-    if (tundaInstal) {
-      var ev = tundaInstal;
-      tundaInstal = null;
-      try {
-        ev.prompt();
-        if (ev.userChoice) ev.userChoice.then(segarkanInstal, segarkanInstal);
-      } catch (err) {}
-    } else if (p) {
-      p.textContent = panduanInstal();
-      p.hidden = !p.hidden;
+    if (!b || b.disabled) return;
+    if (tundaInstal) { jalankanInstal(); return; }
+    if (perangkatIos() && navigator.share) {
+      navigator.share({ title: 'Habit Tracker', url: location.href.split('#')[0] }).catch(function () {});
+      return;
     }
+    // Browser belum menyiapkan dialog instal: tunggu sebentar, lalu otomatis dijalankan begitu siap
+    tungguInstal = true;
+    labelInstal('Menyiapkan\u2026'); pesanInstal('');
+    clearTimeout(tmrInstal);
+    tmrInstal = setTimeout(function () {
+      tungguInstal = false;
+      labelInstal('Instal');
+      pesanInstal('Instal belum tersedia saat ini. Coba muat ulang halaman.');
+    }, 3000);
   });
   document.getElementById('tutup-kartu-instal').addEventListener('click', function () {
     kartuDitutup = true;

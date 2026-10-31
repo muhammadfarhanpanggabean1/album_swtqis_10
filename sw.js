@@ -11,7 +11,9 @@ const ASET = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(ASET); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return Promise.all(ASET.map(function (a) { return c.add(a).catch(function () {}); }));
+  }));
   self.skipWaiting();
 });
 
