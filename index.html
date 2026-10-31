@@ -2009,7 +2009,14 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      var adaKontrol = !!navigator.serviceWorker.controller, sudahMuat = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!adaKontrol || sudahMuat || document.querySelector('dialog[open]')) return;
+        sudahMuat = true;
+        location.reload();
+      });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(function (reg) { reg.update(); }).catch(function () {});
     });
   }
 </script>
