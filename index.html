@@ -2118,7 +2118,7 @@ function izinAkun() {
     S.d=null; show();
   }
   var grid=document.getElementById("grid"), home=document.getElementById("home"), panel=document.getElementById("panel"), box=document.getElementById("photos");
-  function fillGrid(el,y,m){
+  function fillGrid(el,y,m,lite){
     var now=new Date(),total=0;
     el.innerHTML="";
     DOW.forEach(function(n){var e=document.createElement("div");e.className="dow";e.textContent=n;el.appendChild(e);});
@@ -2131,7 +2131,7 @@ function izinAkun() {
       b.setAttribute("aria-label",d+" "+BULAN[m-1]+" "+y+", "+l.length+" foto");
       var h='<span class="n">'+d+'</span>';
       if(l.length) h='<img alt="">'+h+'<span class="c">'+l.length+'</span>';
-      b.innerHTML=h; if(l.length) setThumb(b.querySelector("img"),l[coverIdx(id(y,m,d))]||l[0]); b.disabled=!l.length&&!(window.CLOUD_URL&&window.CLOUD_OWNER); if(l.length||(window.CLOUD_URL&&window.CLOUD_OWNER))(function(dd,bb,ada){bb.addEventListener("click",function(){openDay(dd,ada?bb:null);});})(d,b,l.length>0);
+      b.innerHTML=h; if(l.length){ var cs=l[coverIdx(id(y,m,d))]||l[0]; if(lite) b._src=cs; else setThumb(b.querySelector("img"),cs); } b.disabled=!l.length&&!(window.CLOUD_URL&&window.CLOUD_OWNER); if(l.length||(window.CLOUD_URL&&window.CLOUD_OWNER))(function(dd,bb,ada){bb.addEventListener("click",function(){openDay(dd,ada?bb:null);});})(d,b,l.length>0);
       el.appendChild(b);
     }
     /* selalu 6 baris agar tinggi kalender tetap dan kartu di bawahnya tidak berpindah */
@@ -2161,7 +2161,20 @@ function izinAkun() {
   var mActive=false, mPos=0, mVel=0, mTgt=null, mRaf=0, mW=0, mShown=0, mDragged=false;
   var panes=[{el:grid,k:null,h:0},{el:ghost,k:null,h:0}];
   var PRE={}, mPend=0, mLH=-1, mLT="";
-  var mDir=1, preT=0;
+  var mDir=1, preT=0, hydT=0, hydR=0;
+  /* isi foto bulan yang dibangun ringan: setelah geseran melambat, bertahap agar tidak membekukan layar */
+  function hydrate(){
+    if(hydR) return;
+    var q=[].slice.call(document.querySelectorAll("#cal button.day.has")).filter(function(b){return b._src;});
+    if(!q.length) return;
+    (function step(){
+      hydR=0;
+      if(mActive&&mRaf&&Math.abs(mVel)>2.5){ hydLater(); return; }
+      for(var i=0;i<6&&q.length;i++){ var b=q.shift(), im=b.querySelector("img"); if(im&&b._src){ setThumb(im,b._src); b._src=null; } }
+      if(q.length) hydR=requestAnimationFrame(step);
+    })();
+  }
+  function hydLater(){ clearTimeout(hydT); hydT=setTimeout(function(){ if(hydR){hydLater();return;} hydrate(); },140); }
   function preBuild(){
     preT=0;
     if(S.v||S.d||mActive||g) return;
@@ -2177,7 +2190,7 @@ function izinAkun() {
   function paneFill(p,k){
     var y=Math.floor(k/12),m=k%12+1, pc=PRE[k];
     if(pc){ delete PRE[k]; p.el.innerHTML=""; while(pc.firstChild) p.el.appendChild(pc.firstChild); }
-    else fillGrid(p.el,y,m);
+    else{ fillGrid(p.el,y,m,true); hydLater(); }
     p.el.setAttribute("aria-label","Kalender "+BULAN[m-1]+" "+y);
     p.k=k; p.h=p.el.offsetHeight;
   }
@@ -2236,6 +2249,7 @@ function izinAkun() {
     }
     if(keep){ setMeta(S.y,S.m); totalEl.textContent=countMonth(S.y,S.m)+" foto"; }
     else renderMonth();
+    hydLater();
     warm();
   }
   function mRun(v0,fixed){
