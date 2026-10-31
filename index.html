@@ -823,6 +823,22 @@
   #kotak-keg .dlg-aksi button:disabled { opacity: 0.3; cursor: not-allowed; }
   #kotak-keg .dlg-cat { margin: 0; font-size: 0.75rem; opacity: 0.65; line-height: 1.45; }
 
+  /* Kartu instal naik dari bawah dengan mulus, turun lagi saat ditutup */
+  .kartu-instal { --tx: -50%; }
+  @keyframes naik {
+    from { opacity: 0; transform: translateX(var(--tx, 0px)) translateY(calc(100% + 160px)); }
+    to   { opacity: 1; transform: translateX(var(--tx, 0px)) translateY(0); }
+  }
+  @keyframes turun-kartu {
+    from { opacity: 1; transform: translateX(var(--tx, 0px)) translateY(0); }
+    to   { opacity: 0; transform: translateX(var(--tx, 0px)) translateY(calc(100% + 160px)); }
+  }
+  .kartu-instal:not([hidden]) { animation: naik 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards; }
+  .kartu-instal.keluar { animation: turun-kartu 0.4s cubic-bezier(0.5, 0, 0.9, 0.6) forwards; pointer-events: none; }
+  @media (min-width: 769px), (orientation: landscape) and (min-width: 560px) {
+    .kartu-instal { --tx: 0px; }
+  }
+
   /* Desktop: isi Habit Tracker dimulai di bawah kotak tab (menimpa padding dasar yang ada di atasnya) */
   @media (min-width: 769px), (orientation: landscape) and (min-width: 560px) {
     #habit-tracker { padding-top: calc(130px + env(safe-area-inset-top, 0px)); padding-bottom: 24px; }
@@ -1945,7 +1961,7 @@
   });
 
   /* ---------- Instal aplikasi ---------- */
-  var tundaInstal = window.__tunda || null, kartuDitutup = false, tungguInstal = false, tmrInstal = null;
+  var tundaInstal = window.__tunda || null, kartuDitutup = false, tungguInstal = false, tmrInstal = null, tmrKartu = null;
   function sudahTerpasang() {
     try {
       if (navigator.standalone) return true;
@@ -1958,7 +1974,15 @@
   function segarkanInstal() {
     var t = sudahTerpasang();
     document.getElementById('banner-instal').hidden = t;
-    document.getElementById('kartu-instal').hidden = t || kartuDitutup;
+    var kartu = document.getElementById('kartu-instal'), mau = !(t || kartuDitutup);
+    if (mau) {
+      clearTimeout(tmrKartu);
+      kartu.classList.remove('keluar');
+      kartu.hidden = false;
+    } else if (!kartu.hidden && !kartu.classList.contains('keluar')) {
+      kartu.classList.add('keluar');
+      tmrKartu = setTimeout(function () { kartu.hidden = true; kartu.classList.remove('keluar'); }, 400);
+    }
   }
   function perangkatIos() {
     var ua = navigator.userAgent || '';
