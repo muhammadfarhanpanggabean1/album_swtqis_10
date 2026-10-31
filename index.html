@@ -529,7 +529,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;tr
 @media (prefers-reduced-transparency:reduce){.day,.day:not(.has),.gk,.gk button.b,.gk input[type=email],.gk input[type=text]{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
 /* ===== Performa: blur hanya di tempat yang ada isi di belakangnya ===== */
 .day,.day .c,.day.has .n,.mc,.sant .kartu,.sgal .sb,.dv .kd,#mpsel,.dv textarea,.dv .akf input,.uk,button.b,.gk,.gk input[type=email],.gk input[type=text],.gk button.b,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-html .sgal .sc{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .day.has .n,html .day .c,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 /* geser bulan: grid dipromosikan ke layer GPU */
 .cal.moving .grid{will-change:transform,opacity}
 </style>
