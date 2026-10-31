@@ -531,7 +531,10 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;tr
 .day,.day .c,.day.has .n,.mc,.sant .kartu,.sgal .sb,.dv .kd,#mpsel,.dv textarea,.dv .akf input,.uk,button.b,.gk,.gk input[type=email],.gk input[type=text],.gk button.b,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .day.has .n,html .day .c,html.trn .day:not(.has){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 /* geser bulan: grid dipromosikan ke layer GPU */
-.cal.moving .grid{will-change:transform,opacity}
+.cal .grid{will-change:transform;backface-visibility:hidden}
+.cal.moving .grid{contain:layout style}
+.cal.moving .day,.cal.moving .day *{transition:none!important}
+.cal.moving .day img{pointer-events:none}
 </style>
 </head>
 <body>
@@ -2157,14 +2160,19 @@ function izinAkun() {
   function mClamp(v){return Math.max(MIN,Math.min(MAX,v));}
   var mActive=false, mPos=0, mVel=0, mTgt=null, mRaf=0, mW=0, mShown=0, mDragged=false;
   var panes=[{el:grid,k:null,h:0},{el:ghost,k:null,h:0}];
-  var PRE={};
+  var PRE={}, mPend=0, mLH=-1, mLT="";
+  var mDir=1, preT=0;
   function preBuild(){
-    if(S.v||S.d||mActive) return;
-    var base=mIdx(S.y,S.m);
-    [1,-1].forEach(function(o){
-      var k=base+o; if(k<MIN||k>MAX||PRE[k]) return;
+    preT=0;
+    if(S.v||S.d||mActive||g) return;
+    var base=mIdx(S.y,S.m), ord=mDir>0?[1,-1]:[-1,1];
+    /* satu bulan per giliran senggang (bukan dua sekaligus): tidak ada tugas panjang yang membekukan layar */
+    for(var i=0;i<2;i++){
+      var k=base+ord[i]; if(k<MIN||k>MAX||PRE[k]) continue;
       var d=document.createElement("div"); fillGrid(d,Math.floor(k/12),k%12+1); PRE[k]=d;
-    });
+      preT=setTimeout(function(){(window.requestIdleCallback||setTimeout)(preBuild);},120);
+      return;
+    }
   }
   function paneFill(p,k){
     var y=Math.floor(k/12),m=k%12+1, pc=PRE[k];
@@ -2193,20 +2201,19 @@ function izinAkun() {
   function mPaint(){
     var lo=Math.floor(mPos), f=mPos-lo, pr=mAssign(lo);
     /* gaya lembut: bulan bergeser sambil memudar dan sedikit mengecil di tepi */
-    pr[0].el.style.transform="translate3d("+((lo-mPos)*mW)+"px,0,0) scale("+(1-0.04*f)+")";
-    pr[1].el.style.transform="translate3d("+((lo+1-mPos)*mW)+"px,0,0) scale("+(1-0.04*(1-f))+")";
-    pr[0].el.style.opacity=(1-0.55*f).toFixed(3);
-    pr[1].el.style.opacity=(1-0.55*(1-f)).toFixed(3);
-    cal.style.height=(pr[0].h*(1-f)+pr[1].h*f+20)+"px";
+    /* hanya translasi (tanpa skala/pudar): lapisan GPU cukup digeser, tanpa menggambar ulang atau permukaan render tambahan */
+    pr[0].el.style.transform="translate3d("+((lo-mPos)*mW).toFixed(2)+"px,0,0)";
+    pr[1].el.style.transform="translate3d("+((lo+1-mPos)*mW).toFixed(2)+"px,0,0)";
+    var hh=Math.round((pr[0].h*(1-f)+pr[1].h*f+20)*2)/2; if(hh!==mLH){mLH=hh;cal.style.height=hh+"px";}
     var near=Math.round(mPos);
     if(near!==mShown){
       mShown=near;
       var y=Math.floor(near/12),m=near%12+1;
-      setMeta(y,m); totalEl.textContent=countMonth(y,m)+" foto";
+      document.getElementById("title").textContent=BULAN[m-1]+" "+y; totalEl.textContent=countMonth(y,m)+" foto";
     }
   }
   function mReset(){
-    mActive=false; mRaf=0; mTgt=null;
+    mActive=false; mRaf=0; mTgt=null; mLH=-1;
     cal.classList.remove("moving"); cal.style.height="";
     panes.forEach(function(p){p.el.style.transform="";p.el.style.opacity="";p.k=null;});
   }
@@ -2216,6 +2223,7 @@ function izinAkun() {
     target=Math.round(mClamp(target));
     var y=Math.floor(target/12),m=target%12+1;
     var keep=(panes[0].k===target), fg=(!keep&&panes[1].k===target);
+    mDir=target>=mIdx(S.y,S.m)?1:-1;
     if(y!==S.y||m!==S.m){
       rep(y+"/"+m);
       S={y:y,m:m,d:null}; saveMonth();
@@ -2298,11 +2306,12 @@ function izinAkun() {
     mPos=mClamp(g.pos0-(e.clientX-g.x)/mW);
     g.s.push({t:now,x:e.clientX});
     while(g.s.length>2&&now-g.s[0].t>100) g.s.shift();
-    mPaint();
+    if(!mPend){mPend=requestAnimationFrame(function(){mPend=0;if(mActive&&g)mPaint();});}
   });
   function gEnd(e){
     if(!g||e.pointerId!==g.id) return;
     var gg=g; g=null;
+    if(mPend){cancelAnimationFrame(mPend);mPend=0;}
     if(!gg.started) return;
     mDragged=true;
     var v=0, s=gg.s;
