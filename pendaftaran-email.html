@@ -341,7 +341,7 @@
         }else if(balasan === "kuota habis"){
           statusEl.textContent = "Pengiriman kode hari ini sudah penuh. Coba lagi besok.";
         }else{
-          statusEl.textContent = "Belum berhasil. Coba kirim lagi sebentar lagi.";
+          statusEl.textContent = "Belum berhasil. " + (balasan.indexOf("galat") === 0 ? balasan : "Coba kirim lagi sebentar lagi.");
         }
       }).catch(function(){
         reset();
@@ -490,7 +490,7 @@
         }else if(balasan === "email sudah terdaftar"){
           pesan("Email ini sudah terdaftar. Pilih Ganti email.", true);
         }else{
-          pesan("Belum berhasil. Coba lagi sebentar lagi.", true);
+          pesan("Belum berhasil. " + (balasan.indexOf("galat") === 0 ? balasan : "Coba lagi sebentar lagi."), true);
         }
       }).catch(function(){
         reset();
