@@ -435,12 +435,13 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .dv .bh button.b{padding:6px 14px}
 .dv textarea{display:block;width:100%;height:220px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto;-webkit-user-select:text;user-select:text;touch-action:pan-x pan-y}
 /* ===== Gerbang masuk (email + kode) ===== */
-html.kunci body>*:not(.gb){visibility:hidden}
+html.kunci body>*:not(.gb):not(.ig){visibility:hidden}
 html.kunci{overflow:hidden}
 .gb{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto;background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg)}
 .gb[hidden]{display:none}
 .gk{width:min(380px,100%);margin:auto;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px 18px 18px;box-shadow:0 12px 40px rgba(120,80,50,.22);text-align:center;animation:pop .3s var(--mulus)}
 .gk h2{touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin:0 0 6px;font-family:"Fraunces",Georgia,serif;font-size:1.7rem;font-weight:600;letter-spacing:-.01em}
+.gk .gsd{margin:0 0 4px;color:var(--muted);font-size:.85rem;font-weight:700;letter-spacing:.04em}
 .gk .gp{margin:0 0 14px;color:var(--muted);font-size:.9rem;line-height:1.5}
 .gk .gcek{padding:18px 0;color:var(--muted);font-weight:700}
 .gk form{display:flex;flex-direction:column;gap:10px}
@@ -522,11 +523,88 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
 .prp-mini .prp-bar{height:3px;margin:0;border-radius:0;background:transparent}
 .prp-mini .prp-pil{position:absolute;left:50%;top:7px;transform:translateX(-50%);white-space:nowrap;font-size:.7rem;font-weight:800;color:var(--ink);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:2px 10px;box-shadow:0 2px 8px rgba(90,60,40,.14)}
 @media (prefers-reduced-motion:reduce){.prp-bar i{transition:none}.prp.prp-selesai{transition:none}}
+/* ===== Animasi bertahap gerbang masuk (sama seperti gerbang Habit) ===== */
+.gk h2,.gk .gp,.gk .gcek{animation:gb-jelas 1.8s var(--mulus) backwards}
+.gk .gsd{animation:gb-jelas 1.4s var(--mulus) backwards}
+.gk h2{animation-delay:.2s}
+.gk .gp,.gk .gcek{animation-delay:.65s}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .gk h2{color:transparent;-webkit-background-clip:text;background-clip:text;background-image:linear-gradient(100deg,var(--ink) 0 40%,var(--today) 50%,var(--ink) 60% 100%);background-size:260% 100%;animation:gb-jelas 1.8s var(--mulus) .2s backwards,gb-kilau 2.4s ease-in-out 1.8s backwards}
+}
+.gk form>input{animation:gb-tumbuh 1.5s var(--mulus) 1.1s backwards}
+.gk form>input::placeholder{animation:gb-ph 1.2s ease 2.2s backwards}
+.gk .gs{animation:gb-jelas 1.2s var(--mulus) 1.7s backwards}
+.gk form>button.b:not(.alt){position:relative;overflow:hidden;animation:gb-tumbuh 1.4s var(--mulus) 2.1s backwards,gb-label 1s ease 2.8s backwards}
+.gk form>button.b:not(.alt)::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-130%);background:linear-gradient(100deg,transparent 38%,color-mix(in srgb,var(--today) 38%,transparent) 50%,transparent 62%);animation:gb-sapu 1.5s ease-in-out 3.5s backwards}
+.gk .gr{animation:gb-jelas 1s var(--mulus) 3s backwards}
+.gk .gm:not(:empty){animation:gb-err .35s var(--mulus) backwards}
+/* langkah berikutnya (kode, ganti email): urutan yang sama, tetapi lebih singkat */
+.gk.lanjut .gp{animation-delay:0s;animation-duration:.9s}
+.gk.lanjut form>input{animation-delay:.15s;animation-duration:.9s}
+.gk.lanjut form>input::placeholder{animation-delay:.9s}
+.gk.lanjut .gs{animation-delay:.5s;animation-duration:.8s}
+.gk.lanjut form>button.b:not(.alt){animation-delay:.6s,1.2s;animation-duration:.9s,.8s}
+.gk.lanjut form>button.b:not(.alt)::after{animation-delay:1.5s}
+.gk.lanjut .gr{animation-delay:1.7s}
+/* keluar: isi memudar, lalu gerbang menutup */
+.gb.keluar{pointer-events:none;animation:gb-pergi .7s ease .15s forwards}
+.gb.keluar .gk{animation:gb-isi-pergi .55s var(--mulus) forwards}
+@keyframes gb-jelas{from{opacity:0;transform:translateY(10px);filter:blur(10px)}}
+@keyframes gb-kilau{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes gb-tumbuh{from{opacity:0;clip-path:inset(-8px 50% -8px 50% round 999px)}to{opacity:1;clip-path:inset(-8px -8px -8px -8px round 999px)}}
+@keyframes gb-ph{from{opacity:0}}
+@keyframes gb-label{from{color:transparent}}
+@keyframes gb-sapu{from{transform:translateX(-130%)}to{transform:translateX(130%)}}
+@keyframes gb-err{from{opacity:0;transform:translateY(-4px)}}
+@keyframes gb-pergi{to{opacity:0}}
+@keyframes gb-isi-pergi{to{opacity:0;transform:translateY(-12px) scale(.97);filter:blur(5px)}}
+@media (prefers-reduced-motion:reduce){
+  .gk .gsd,.gk h2,.gk .gp,.gk .gcek,.gk form>input,.gk form>input::placeholder,.gk .gs,.gk form>button.b,.gk form>button.b::after,.gk .gr,.gk .gm,.gb.keluar,.gb.keluar .gk{animation:none!important}
+  .gb.keluar{opacity:0}
+}
+/* ===== Banner: dibuka lewat browser Instagram -> arahkan ke Chrome ===== */
+.ig[hidden]{display:none}
+.ig{position:fixed;z-index:400;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));max-width:460px;margin:0 auto;box-sizing:border-box;padding:14px 16px;border-radius:20px;background:color-mix(in srgb,var(--bg) 90%,#fff);border:1px solid var(--g-garis);box-shadow:0 10px 30px -10px rgba(90,60,40,.4);color:var(--ink);font-size:14px;line-height:1.4;animation:pop .35s var(--mulus) backwards}
+.ig p{margin:0}
+.ig-a{display:flex;gap:8px;margin:10px 0 8px}
+.ig-b,.ig-x{border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;cursor:pointer}
+.ig-b{border:0;background:var(--accent);color:#3b2a20;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 10px color-mix(in srgb,var(--accent) 45%,transparent)}
+.ig-x{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb,var(--ink) 22%,transparent)}
+.ig-h{font-size:12.5px;opacity:.8}
+@media (prefers-reduced-motion:reduce){.ig{animation:none}}
 </style>
 </head>
 <body>
+<div class="ig" id="ig" role="region" aria-label="Buka di Chrome" hidden>
+  <p><b>Antum membuka album lewat Instagram.</b> Untuk hasil terbaik, buka di Chrome.</p>
+  <div class="ig-a"><button type="button" class="ig-b" id="igBuka">Buka di Chrome</button><button type="button" class="ig-x" id="igTutup">Nanti</button></div>
+  <p class="ig-h">Jika tombol tidak bekerja: ketuk ⋯ di pojok layar, lalu pilih “Buka di browser”.</p>
+</div>
+<script>
+/* terdeteksi dibuka dari browser dalam Instagram: tampilkan tombol untuk pindah ke Chrome */
+(function(){
+  var ua=navigator.userAgent||"";
+  if(!/Instagram/i.test(ua)) return;
+  try{ if(sessionStorage.getItem("ig-tutup")==="1") return; }catch(e){}
+  var el=document.getElementById("ig"); if(!el) return;
+  el.hidden=false;
+  document.getElementById("igBuka").addEventListener("click",function(){
+    var skema=location.protocol.replace(":",""), tujuan=location.host+location.pathname+location.search;
+    if(/Android/i.test(ua)){
+      location.href="intent://"+tujuan+"#Intent;scheme="+skema+";package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(location.href)+";end";
+    }else if(/iPhone|iPad|iPod/i.test(ua)){
+      location.href=(skema==="https"?"googlechromes://":"googlechrome://")+tujuan;
+    }
+  });
+  document.getElementById("igTutup").addEventListener("click",function(){
+    el.hidden=true;
+    try{ sessionStorage.setItem("ig-tutup","1"); }catch(e){}
+  });
+})();
+</script>
 <div class="gb" id="gb" role="dialog" aria-modal="true" aria-label="Masuk Album SWTQIS-10">
   <div class="gk">
+    <p class="gsd">Selamat datang di</p>
     <h2 id="gjudul">Album SWTQIS-10</h2>
     <p class="gp" id="gp">Album ini terkunci. Masukkan email antum untuk meminta kode masuk.</p>
     <div class="gcek" id="gcek" hidden>Memeriksa akses…</div>
@@ -556,6 +634,8 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   var UPD="Pemilik belum memperbarui Code.gs (versi 6) dan deploy ulang.";
   var BELUM="Email antum belum terdaftar oleh pemilik.";
   var A={t:"",tx:0}, rdy, rdyRes, busy=null, terbuka=false, emailNow="", sibuk=false;
+  var gk=document.querySelector(".gk"), pertama=true, tampilSudah=false, tutupT=0;
+  function kurangGerak(){return !!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);}
   function newReady(){rdy=new Promise(function(r){rdyRes=r;});}
   newReady();
   var _f=window.fetch.bind(window);
@@ -635,13 +715,63 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   function langkah(n){
     gcek.hidden=n!==0; gf1.hidden=n!==1; gf2.hidden=n!==2;
     gp.textContent=n===0?"":(n===1?"Album ini terkunci. Masukkan email antum untuk meminta kode masuk.":"Masukkan kode 6 angka yang dikirim ke email antum.");
+    /* kemunculan pertama: urutan penuh; langkah berikutnya: urutan singkat, teks pengantar diputar ulang */
+    var ulang=!pertama; pertama=false;
+    gk.classList.toggle("lanjut",ulang);
+    if(ulang&&n!==0){gp.style.animation="none"; void gp.offsetWidth; gp.style.animation="";}
   }
+  /* tampilkan gerbang; bila baru muncul (atau sedang memudar), urutan animasi mulai dari awal */
+  function tampil(){
+    clearTimeout(tutupT);
+    var baru=gb.hidden||gb.classList.contains("keluar");
+    gb.classList.remove("keluar");
+    if(baru){gk.classList.remove("lanjut"); pertama=true;}
+    gb.hidden=false; tampilSudah=true;
+  }
+  /* getar singkat pada kolom yang salah */
+  function goyang(el){
+    try{
+      if(!el||!el.animate||kurangGerak()) return;
+      el.animate([{transform:"translateX(0)"},{transform:"translateX(-7px)"},{transform:"translateX(6px)"},{transform:"translateX(-4px)"},{transform:"translateX(2px)"},{transform:"translateX(0)"}],{duration:380,easing:"ease"});
+    }catch(e){}
+  }
+  function msgG(t){msg(t); goyang(gf1.hidden?gc:ge);}
+  /* efek desir di tombol (WebAudio, tanpa berkas): hanya berbunyi bila browser sudah mengizinkan audio setelah layar disentuh */
+  var ac=null;
+  function bukaAudio(){
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!ac&&AC){try{ac=new AC();}catch(e){ac=null;}}
+    if(ac&&ac.state==="suspended"){try{var r=ac.resume(); if(r&&r.catch) r.catch(function(){});}catch(e){}}
+  }
+  ["pointerdown","touchstart","keydown"].forEach(function(ev){document.addEventListener(ev,bukaAudio,{passive:true});});
+  function bunyiKilau(){
+    if(!ac||ac.state!=="running"||document.hidden) return;
+    try{
+      var t=ac.currentTime+0.03, induk=ac.createGain();
+      induk.gain.value=0.32; induk.connect(ac.destination);
+      var n=Math.floor(ac.sampleRate*1.6), buf=ac.createBuffer(1,n,ac.sampleRate), d=buf.getChannelData(0);
+      for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+      var sumber=ac.createBufferSource(); sumber.buffer=buf;
+      var saring=ac.createBiquadFilter(); saring.type="bandpass"; saring.Q.value=5;
+      saring.frequency.setValueAtTime(700,t); saring.frequency.exponentialRampToValueAtTime(6500,t+1.5);
+      var gn=ac.createGain();
+      gn.gain.setValueAtTime(0.0001,t); gn.gain.exponentialRampToValueAtTime(0.16,t+0.7); gn.gain.exponentialRampToValueAtTime(0.0001,t+1.55);
+      sumber.connect(saring); saring.connect(gn); gn.connect(induk);
+      sumber.start(t); sumber.stop(t+1.6);
+    }catch(e){}
+  }
+  gb.addEventListener("animationstart",function(e){if(e.animationName==="gb-sapu") bunyiKilau();});
   function form(m){
-    gb.hidden=false; langkah(1); msg(m||"");
+    tampil(); langkah(1); msg(m||"");
     try{var e0=localStorage.getItem(EK); if(e0&&!ge.value){ge.value=e0;gs.checked=true;}}catch(e){}
   }
   function buka(){
-    terbuka=true; html.classList.remove("kunci"); gb.hidden=true; gc.value=""; msg("");
+    terbuka=true; html.classList.remove("kunci"); gc.value=""; msg("");
+    if(tampilSudah&&!gb.hidden){
+      /* gerbang sedang terlihat: isi memudar dulu, baru ditutup */
+      gb.classList.add("keluar"); clearTimeout(tutupT);
+      tutupT=setTimeout(function(){gb.hidden=true; gb.classList.remove("keluar");},kurangGerak()?0:850);
+    }else gb.hidden=true;
     rdyRes();
   }
   function kunciUlang(m){
@@ -667,17 +797,17 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   function kirim(ulang){
     if(sibuk) return;
     var em=ulang?emailNow:ge.value.trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msg("Masukkan alamat email yang benar.");return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msgG("Masukkan alamat email yang benar.");return;}
     var btn=ulang?gul:gk1; setSibuk(true,btn,"Mengirim…"); msg("");
     post({a:"ak",e:em}).then(function(j){
       if(j&&j.ok){emailNow=em;langkah(2);gc.value="";msg("Kode dikirim ke "+em+". Berlaku 10 menit. Cek juga folder spam.",true);gc.focus();return;}
-      msg(pesanGalat(j));
+      msgG(pesanGalat(j));
     }).catch(function(){msg("Tidak bisa terhubung. Periksa internet lalu coba lagi.");}).then(function(){setSibuk(false,btn);});
   }
   function masuk(){
     if(sibuk) return;
     var c=gc.value.replace(/\D/g,"");
-    if(c.length!==6){msg("Masukkan kode 6 angka.");return;}
+    if(c.length!==6){msgG("Masukkan kode 6 angka.");return;}
     setSibuk(true,gk2,"Memeriksa…"); msg("");
     var keep=!!gs.checked;
     post({a:"av",e:emailNow,c:c,s:keep?1:0}).then(function(j){
@@ -686,7 +816,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
         try{if(keep) localStorage.setItem(EK,emailNow); else localStorage.removeItem(EK);}catch(e){}
         buka(); return;
       }
-      msg(pesanGalat(j)); if(j&&(j.e==="habis")) gc.value="";
+      msgG(pesanGalat(j)); if(j&&(j.e==="habis")) gc.value="";
     }).catch(function(){msg("Tidak bisa terhubung. Periksa internet lalu coba lagi.");}).then(function(){setSibuk(false,gk2);});
   }
   gf1.addEventListener("submit",function(e){e.preventDefault();kirim(false);});
@@ -713,7 +843,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   if(rec&&rec.o&&!pin){hapusRec();rec=null;}
   if(rec&&rec.t&&rec.tx-Date.now()>120000){A.t=rec.t;A.tx=rec.tx;buka();}
   else if(pin||(rec&&rec.r)){
-    html.classList.add("kunci"); gb.hidden=false; langkah(0);
+    html.classList.add("kunci"); tampil(); langkah(0);
     renew().then(function(r){
       if(r==="ok"||r==="galat") buka();
       else if(r==="config") form(CFG);
