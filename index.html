@@ -435,10 +435,18 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .dv .bh button.b{padding:6px 14px}
 .dv textarea{display:block;width:100%;height:220px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto;-webkit-user-select:text;user-select:text;touch-action:pan-x pan-y}
 /* ===== Gerbang masuk (email + kode) ===== */
-html.kunci body>*:not(.gb):not(.ig){visibility:hidden}
+html.kunci body>*:not(.gb):not(.ig):not(.pb){visibility:hidden}
 html.kunci{overflow:hidden}
 .gb{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto;background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg)}
 .gb[hidden]{display:none}
+/* layar pembuka: satu ketukan "Buka" sebelum gerbang, agar browser mengizinkan efek suara sejak animasi gerbang dimulai */
+.pb{position:fixed;inset:0;z-index:350;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg)}
+.pb[hidden]{display:none}
+.pb #pbBuka{min-width:160px;padding:14px 36px;font-size:1.1rem}
+.pb.pb-keluar{pointer-events:none;animation:pb-pergi .5s ease forwards}
+@keyframes pb-pergi{to{opacity:0}}
+/* selama layar pembuka tampil, animasi gerbang ditahan; begitu "Buka" diketuk, urutan penuh mulai dari awal (dengan suara) */
+html.tunggu .gb,html.tunggu .gb *,html.tunggu .gb *::before,html.tunggu .gb *::after,html.tunggu .gb *::placeholder{animation:none!important}
 .gk{width:min(380px,100%);margin:auto;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px 18px 18px;box-shadow:0 12px 40px rgba(120,80,50,.22);text-align:center;animation:pop .3s var(--mulus)}
 .gk h2{touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin:0 0 6px;font-family:"Fraunces",Georgia,serif;font-size:1.7rem;font-weight:600;letter-spacing:-.01em}
 .gk .gsd{margin:0 0 4px;color:var(--muted);font-size:.85rem;font-weight:700;letter-spacing:.04em}
@@ -602,6 +610,9 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   });
 })();
 </script>
+<div class="pb" id="pb" role="dialog" aria-modal="true" aria-label="Buka Album SWTQIS-10" hidden>
+  <button class="b" id="pbBuka" type="button">Buka</button>
+</div>
 <div class="gb" id="gb" role="dialog" aria-modal="true" aria-label="Masuk Album SWTQIS-10">
   <div class="gk">
     <p class="gsd">Selamat datang di</p>
@@ -719,10 +730,12 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
     var ulang=!pertama; pertama=false;
     gk.classList.toggle("lanjut",ulang);
     if(ulang&&n!==0){gp.style.animation="none"; void gp.offsetWidth; gp.style.animation="";}
+    if(n!==0&&siap()){try{var tl=ac.currentTime+0.02; desir(tl,0.8,500,3200,0.1,2); ketuk(tl+0.05,0.14,2500); ketuk(tl+0.6,0.1,3000);}catch(e){}}
   }
   /* tampilkan gerbang; bila baru muncul (atau sedang memudar), urutan animasi mulai dari awal */
   function tampil(){
     clearTimeout(tutupT);
+    if(!pbSudah){pbSudah=true; pb.hidden=false; html.classList.add("tunggu"); try{pbBtn.focus({preventScroll:true});}catch(e){}}
     var baru=gb.hidden||gb.classList.contains("keluar");
     gb.classList.remove("keluar");
     if(baru){gk.classList.remove("lanjut"); pertama=true;}
@@ -730,6 +743,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   }
   /* getar singkat pada kolom yang salah */
   function goyang(el){
+    bunyiGalat();
     try{
       if(!el||!el.animate||kurangGerak()) return;
       el.animate([{transform:"translateX(0)"},{transform:"translateX(-7px)"},{transform:"translateX(6px)"},{transform:"translateX(-4px)"},{transform:"translateX(2px)"},{transform:"translateX(0)"}],{duration:380,easing:"ease"});
@@ -746,27 +760,114 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   ["pointerdown","touchstart","keydown"].forEach(function(ev){document.addEventListener(ev,bukaAudio,{passive:true});});
   function bunyiKilau(){
     if(!ac||ac.state!=="running"||document.hidden) return;
-    try{
-      var t=ac.currentTime+0.03, induk=ac.createGain();
-      induk.gain.value=0.32; induk.connect(ac.destination);
-      var n=Math.floor(ac.sampleRate*1.6), buf=ac.createBuffer(1,n,ac.sampleRate), d=buf.getChannelData(0);
-      for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
-      var sumber=ac.createBufferSource(); sumber.buffer=buf;
-      var saring=ac.createBiquadFilter(); saring.type="bandpass"; saring.Q.value=5;
-      saring.frequency.setValueAtTime(700,t); saring.frequency.exponentialRampToValueAtTime(6500,t+1.5);
-      var gn=ac.createGain();
-      gn.gain.setValueAtTime(0.0001,t); gn.gain.exponentialRampToValueAtTime(0.16,t+0.7); gn.gain.exponentialRampToValueAtTime(0.0001,t+1.55);
-      sumber.connect(saring); saring.connect(gn); gn.connect(induk);
-      sumber.start(t); sumber.stop(t+1.6);
-    }catch(e){}
+    try{desir(ac.currentTime+0.03,1.6,700,6500,0.1,5);}catch(e){}
   }
   gb.addEventListener("animationstart",function(e){if(e.animationName==="gb-sapu") bunyiKilau();});
+  /* ===== Efek suara gerbang (WebAudio, tanpa berkas, tanpa nada musik): hanya desir, ketukan, dan dentuman halus.
+     Mengikuti animasi lewat animationstart, jadi tetap sinkron walau urutan penuh atau singkat.
+     Ubah VOL (0 sampai 1) untuk mengatur keras-pelannya. ===== */
+  var VOL=0.6, nbuf=null, mst=null, terakhirGalat=0, sambut=false;
+  function siap(){return !!ac&&ac.state==="running"&&!document.hidden;}
+  function master(){
+    if(!mst||mst.context!==ac){mst=ac.createGain(); mst.gain.value=VOL; var kp=ac.createDynamicsCompressor(); mst.connect(kp); kp.connect(ac.destination);}
+    return mst;
+  }
+  function derau(){
+    if(nbuf&&nbuf.sampleRate===ac.sampleRate) return nbuf;
+    var n=Math.floor(ac.sampleRate*2), b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0);
+    for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+    return (nbuf=b);
+  }
+  /* desir: derau tersaring yang frekuensinya menyapu dari f0 ke f1 */
+  function desir(t,dur,f0,f1,puncak,q){
+    var s=ac.createBufferSource(); s.buffer=derau();
+    var f=ac.createBiquadFilter(); f.type="bandpass"; f.Q.value=Math.min(q||4,2);
+    f.frequency.setValueAtTime(f0,t); f.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    var g=ac.createGain();
+    /* derau pita sempit sangat lemah: dikompensasi menurut lebar pita agar desir terdengar jelas */
+    var fm=Math.sqrt(f0*f1), komp=Math.min(14,Math.sqrt((ac.sampleRate/2)/(fm/Math.min(q||4,2))))*1.6;
+    puncak=puncak*komp;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(puncak,t+dur*0.45); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    s.connect(f); f.connect(g); g.connect(master()); s.start(t); s.stop(t+dur+0.02);
+  }
+  /* ketuk: klik pendek yang halus */
+  function ketuk(t,puncak,fc){
+    var s=ac.createBufferSource(); s.buffer=derau();
+    var f=ac.createBiquadFilter(); f.type="highpass"; f.frequency.value=fc||2200;
+    var g=ac.createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(puncak,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    s.connect(f); f.connect(g); g.connect(master()); s.start(t); s.stop(t+0.07);
+  }
+  /* dentum: ketukan rendah yang turun cepat (bukan nada) */
+  function dentum(t,f,puncak,dur){
+    var o=ac.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(Math.max(40,f*0.4),t+dur);
+    var g=ac.createGain();
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(puncak,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(master()); o.start(t); o.stop(t+dur+0.02);
+  }
+  function bunyiGalat(){
+    var w=Date.now(); if(w-terakhirGalat<400||!siap()) return; terakhirGalat=w;
+    try{var t=ac.currentTime+0.02; dentum(t,170,0.2,0.16); dentum(t+0.09,135,0.16,0.16);}catch(e){}
+  }
+  function efekGerbang(e){
+    if(!siap()) return;
+    var n=e.animationName, el=e.target, t=ac.currentTime+0.02, singkat=gk.classList.contains("lanjut");
+    try{
+      if(n==="gb-jelas"){
+        if(el.classList.contains("gsd")) desir(t,0.6,400,1600,0.06,3);
+        else if(el.tagName==="H2") desir(t,0.9,250,2200,0.1,3);
+        else if(el.classList.contains("gp")||el.classList.contains("gcek")) desir(t,0.7,500,2600,0.06,3);
+        else if(el.classList.contains("gs")) {ketuk(t+0.05,0.1,3000); desir(t,0.35,900,2800,0.04,3);}
+        else if(el.classList.contains("gr")) desir(t,0.5,600,2800,0.05,3);
+      }else if(n==="gb-tumbuh"){
+        var dur=el.tagName==="BUTTON"?(singkat?0.9:1.4):(singkat?0.9:1.5);
+        if(el.tagName==="BUTTON"){
+          desir(t,0.7,400,3200,0.1,4);
+          dentum(t+dur*0.8,120,0.16,0.22); ketuk(t+dur*0.8,0.12,2000);
+        }else{
+          desir(t,0.55,500,2800,0.08,4);
+          ketuk(t+dur*0.8,0.1,2600);
+        }
+      }else if(n==="gb-kilau"){
+        desir(t,1.5,1200,6000,0.05,6);
+      }else if(n==="gb-err"){
+        if(el.classList.contains("ok")) ketuk(t,0.12,2500); else bunyiGalat();
+      }else if(n==="gb-isi-pergi"){
+        desir(t,0.6,2800,350,0.1,3); dentum(t+0.1,90,0.15,0.3);
+      }
+    }catch(x){}
+  }
+  gb.addEventListener("animationstart",efekGerbang);
+  /* ketukan saat tombol atau kotak "simpan" ditekan */
+  gb.addEventListener("click",function(e){
+    if(!siap()||!e.target||!e.target.closest) return;
+    var b=e.target.closest("button,label.gs"); if(!b) return;
+    try{var t=ac.currentTime+0.01; ketuk(t,0.16,1800); if(b.tagName==="BUTTON") dentum(t,220,0.08,0.08);}catch(x){}
+  });
+  /* layar pembuka: ketukan pertama membuka audio, lalu gerbang memulai animasinya */
+  var pb=$("pb"), pbBtn=$("pbBuka"), pbSudah=false;
+  function tutupPembuka(cepat){
+    html.classList.remove("tunggu");
+    if(pb.hidden) return;
+    if(cepat||kurangGerak()){pb.hidden=true; return;}
+    pb.classList.add("pb-keluar");
+    setTimeout(function(){pb.hidden=true; pb.classList.remove("pb-keluar");},550);
+  }
+  pbBtn.addEventListener("click",function(){
+    bukaAudio();
+    if(siap()){try{var tp=ac.currentTime+0.01; ketuk(tp,0.16,1800); dentum(tp,200,0.12,0.2); desir(tp+0.05,0.8,300,2600,0.1,2);}catch(e){}}
+    tutupPembuka(false);
+  });
+  /* ketikan dan fokus kolom: tik halus langsung (tanpa menunggu animasi) */
+  gb.addEventListener("input",function(){if(!siap())return; try{ketuk(ac.currentTime+0.005,0.12,3200);}catch(e){}});
+  gb.addEventListener("focusin",function(e){if(!siap()||!e.target||e.target.tagName!=="INPUT")return; try{desir(ac.currentTime+0.01,0.3,1200,3000,0.06,2);}catch(x){}});
   function form(m){
     tampil(); langkah(1); msg(m||"");
     try{var e0=localStorage.getItem(EK); if(e0&&!ge.value){ge.value=e0;gs.checked=true;}}catch(e){}
   }
   function buka(){
-    terbuka=true; html.classList.remove("kunci"); gc.value=""; msg("");
+    terbuka=true; html.classList.remove("kunci"); tutupPembuka(true); gc.value=""; msg("");
     if(tampilSudah&&!gb.hidden){
       /* gerbang sedang terlihat: isi memudar dulu, baru ditutup */
       gb.classList.add("keluar"); clearTimeout(tutupT);
