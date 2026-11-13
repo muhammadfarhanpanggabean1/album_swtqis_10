@@ -256,7 +256,7 @@ html .day .c,html .mem .c{background:linear-gradient(150deg,rgba(255,255,255,.34
 .ph img.ghost{opacity:.22;filter:blur(1.5px) grayscale(.5)}
 .lb{overflow:hidden;touch-action:none}
 .lb .cnt{color:#f7ebdd;font-weight:700;font-size:.9rem;min-height:1.2em}
-.lb img{touch-action:none;will-change:transform;cursor:grab;max-width:100%;max-height:calc(100vh - 170px);max-height:calc(100dvh - 170px);object-fit:contain;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.lb img{touch-action:none;cursor:grab;image-rendering:auto;max-width:100%;max-height:calc(100vh - 170px);max-height:calc(100dvh - 170px);object-fit:contain;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 @keyframes fade{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.lb,.lb .cnt,.lb button.b,.ph img{transition:none}}
 .peek{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,15,0);transition:background .3s var(--mulus);touch-action:none}
@@ -3714,8 +3714,8 @@ button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
       }).catch(function(){alert("Gagal terhubung.");});
     }
     function b64(b){return new Promise(function(ok){var r=new FileReader();r.onload=function(){ok(String(r.result).split(",")[1]);};r.readAsDataURL(b);});}
-    function draw(src,w,h,max){var s0=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*s0);c.height=Math.round(h*s0);c.getContext("2d").drawImage(src,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,"image/jpeg",.82);});}
-    function toJpg(f){return new Promise(function(ok,no){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){draw(im,im.width,im.height,1600).then(function(b){URL.revokeObjectURL(u);ok(b);});};im.onerror=no;im.src=u;});}
+    function draw(src,w,h,max,q){var s0=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*s0);c.height=Math.round(h*s0);var g=c.getContext("2d");g.imageSmoothingEnabled=true;g.imageSmoothingQuality="high";g.drawImage(src,0,0,c.width,c.height);return new Promise(function(ok){c.toBlob(ok,"image/jpeg",q||.82);});}
+    function toJpg(f){return new Promise(function(ok,no){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){draw(im,im.width,im.height,2560,.92).then(function(b){URL.revokeObjectURL(u);ok(b);});};im.onerror=no;im.src=u;});}
     function poster(f){return new Promise(function(ok){var u=URL.createObjectURL(f),v=document.createElement("video");v.muted=true;v.playsInline=true;v.preload="auto";
       v.onloadeddata=function(){v.currentTime=Math.min(1,(v.duration||2)/2);};
       v.onseeked=function(){draw(v,v.videoWidth,v.videoHeight,640).then(function(b){URL.revokeObjectURL(u);ok(b);});};
