@@ -4608,10 +4608,26 @@ html.rilis{overflow:hidden}
       var b=document.getElementById("rlik"), pv=document.getElementById("rlpv"); if(!b) return;
       b.addEventListener("click",function(){
         if(!ensurePin()) return;
-        var nv=RL?0:1; b.disabled=true;
-        cpost({a:"rl",pin:PIN,v:nv},0).then(function(j){
+        var nv=RL?0:1, kabar=0;
+        if(nv){
+          kabar=confirm("Tandai sudah rilis dan kirim email pemberitahuan ke semua email yang disetujui?\n\nOK = tandai rilis + kirim email\nBatal = pilihan lain")?1:0;
+          if(!kabar&&!confirm("Tandai sudah rilis TANPA mengirim email?")) return;
+        }
+        b.disabled=true;
+        var o={a:"rl",pin:PIN,v:nv};
+        if(kabar){o.m=1; o.u=location.origin+location.pathname.replace(/index\.html$/,"");}
+        cpost(o,0).then(function(j){
           b.disabled=false;
-          if(j&&j.ok){RL=nv; window.__rlv=RL; rlUi(); toast(nv?"Ditandai sudah rilis":"Ditandai belum rilis: pengunjung melihat Segera Rilis"); segarCacheDaftar(); return;}
+          if(j&&j.ok){
+            RL=nv; window.__rlv=RL; rlUi(); segarCacheDaftar();
+            var t=nv?"Ditandai sudah rilis":"Ditandai belum rilis: pengunjung melihat Segera Rilis";
+            if(nv&&kabar){
+              if(j.tunggu) t+=". Email pemberitahuan baru saja dikirim, tunggu 10 menit untuk mengirim lagi.";
+              else if(typeof j.sent==="number") t+=". Email terkirim ke "+j.sent+" dari "+j.total+" alamat"+(j.gagal?" ("+j.gagal+" gagal, mungkin kuota harian habis)":"")+".";
+              else t+=". Email belum terkirim: perbarui Code.gs (versi 8) dan deploy ulang.";
+            }
+            toast(t); return;
+          }
           if(j&&j.e==="aksi tidak dikenal") alert("Perbarui Code.gs di Apps Script dan deploy ulang dulu agar status rilis bisa disimpan.");
           else bad(j);
         }).catch(function(){b.disabled=false; alert("Gagal terhubung.");});
@@ -4988,7 +5004,7 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
     if(!ac&&AC){try{ac=new AC();}catch(e){ac=null;}}
     if(ac&&ac.state==="suspended"){try{var r=ac.resume();if(r&&r.catch)r.catch(function(){});}catch(e){}}
   }
-  /* efek suara (WebAudio, tanpa berkas): desir masuk, dentuman halus, empat lonceng naik, kilau kecil */
+  /* efek suara (WebAudio, tanpa berkas): desir masuk, dentuman halus, ketukan kecil, desir penutup (tanpa nada musik) */
   function bunyi(){
     if(!ac||ac.state!=="running"||document.hidden) return false;
     try{
@@ -5009,14 +5025,6 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
         g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(pk,t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
         o.connect(g); g.connect(m); o.start(t0); o.stop(t0+dur+0.02);
       };
-      var lonceng=function(t0,fr,pk,dur){
-        [[1,1],[2.01,0.28],[3.02,0.1]].forEach(function(h){
-          var o=ac.createOscillator(), g=ac.createGain();
-          o.type="sine"; o.frequency.value=fr*h[0];
-          g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(pk*h[1],t0+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-          o.connect(g); g.connect(m); o.start(t0); o.stop(t0+dur+0.05);
-        });
-      };
       var ketuk=function(t0,pk){
         var s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
         s.buffer=nb; f.type="highpass"; f.frequency.value=3000;
@@ -5025,7 +5033,6 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
       };
       desir(t,0.9,300,3400,0.9);
       dentum(t+0.8,120,0.3,0.35);
-      [[1046.5,0.9],[1318.5,1.05],[1568,1.2],[2093,1.45]].forEach(function(x){lonceng(t+x[1],x[0],0.16,1.4);});
       for(var k=0;k<5;k++) ketuk(t+1.0+k*0.17,0.08);
       desir(t+2.4,0.8,3200,500,0.5);
       return true;
@@ -5105,7 +5112,8 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
    Versi 6: album terkunci; masuk lewat email yang disetujui pemilik + kode 6 angka (lihat GERBANG AKSES EMAIL).
    Tambahan: daftar santri bisa diubah dari app (tambah, ubah nama, hapus) lewat aksi 'sn' dan 'sd'.
    Disimpan di Script Properties akun pertama: N_slug = nama santri, X_slug = santri yang dihapus. */
-/* Versi 7: status rilis (aksi 'rl', properti RL). Bila belum rilis, pengunjung melihat layar "Segera Rilis" setelah login; mode pemilik tidak terpengaruh. */
+/* Versi 8: saat status diubah ke rilis (centang), pemilik bisa mengirim email pemberitahuan ke semua email yang disetujui (fungsi umumkan_). Perlu izin kirim email: jalankan izinAkun sekali bila belum.
+   Versi 7: status rilis (aksi 'rl', properti RL). Bila belum rilis, pengunjung melihat layar "Segera Rilis" setelah login; mode pemilik tidak terpengaruh. */
 
 const PIN = 'GANTI-PIN-INI';            // <-- ganti dengan PIN pemilik (sama untuk semua akun)
 const NAMA_FOLDER = 'Album SWTQIS-10 (Drive)';
@@ -5725,6 +5733,31 @@ function putar_(b) {
   return out_({ ok: true, k: o.k, s: o.s, d: o.d || 0, p: o.p || 0 });
 }
 
+// Email pemberitahuan rilis ke semua email yang disetujui (satu email per alamat, supaya alamat lain tidak terlihat).
+// Dibatasi kuota harian MailApp; yang melebihi kuota dihitung gagal. Penjaga 10 menit mencegah terkirim ganda.
+function umumkan_(u) {
+  const ca = CacheService.getScriptCache();
+  if (ca.get('RLM')) return { ok: true, tunggu: 1, sent: 0, gagal: 0, total: 0 };
+  if (!/^https:\/\/[^\s<>"']{4,300}$/.test(u)) u = '';
+  const ap = PropertiesService.getScriptProperties().getProperties(), em = [];
+  Object.keys(ap).forEach(function (k) { if (k.indexOf('E_') === 0 && emailBersih_(ap[k])) em.push(ap[k]); });
+  let kuota = 0;
+  try { kuota = MailApp.getRemainingDailyQuota(); } catch (x) {}
+  ca.put('RLM', '1', 600);
+  let ok = 0, gagal = 0;
+  em.forEach(function (to, i) {
+    if (i >= kuota) { gagal++; return; }
+    try {
+      MailApp.sendEmail({
+        to: to, name: 'Album SWTQIS-10', subject: 'Album SWTQIS-10 sudah dirilis',
+        body: 'Assalamu\'alaikum.\n\nAlbum SWTQIS-10 sekarang sudah dirilis dan bisa dibuka.' + (u ? '\n\nBuka di sini: ' + u : '') + '\n\nMasuk memakai email ini. Kode masuk 6 angka akan dikirim ke email antum.'
+      });
+      ok++;
+    } catch (x) { gagal++; }
+  });
+  return { ok: true, sent: ok, gagal: gagal, total: em.length };
+}
+
 function doPost(e) {
   try {
     const b = JSON.parse(e.postData.contents);
@@ -5996,6 +6029,8 @@ function doPost(e) {
       // status rilis: v = 1 (centang, sudah rilis) atau 0 (silang, pengunjung melihat "Segera Rilis")
       PropertiesService.getScriptProperties().setProperty('RL', b.v ? '1' : '0');
       bust_();
+      // b.m = 1 dan b.v = 1: kirim email pemberitahuan rilis ke semua email yang disetujui (b.u = alamat album)
+      if (b.v && b.m) return out_(umumkan_(String(b.u || '')));
       return out_({ ok: true });
     }
     if (b.a === 'ur') {
