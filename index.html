@@ -599,6 +599,51 @@ button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
 #temaToast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translate(-50%,-8px);z-index:120;opacity:0;pointer-events:none;padding:6px 14px;border-radius:999px;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:.8rem;font-weight:800;box-shadow:0 4px 14px rgba(90,60,40,.18);transition:opacity .2s ease,transform .2s ease}
 #temaToast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){#temaToast{transition:none}}
+/* ===== Segera Rilis: layar penuh setelah login bila pemilik menandai fitur belum rilis (silang) ===== */
+html.rilis{overflow:hidden}
+.rl{position:fixed;inset:0;z-index:280;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow:hidden;
+  background:radial-gradient(60% 40% at 12% 14%,color-mix(in srgb,var(--accent) 60%,transparent),transparent 70%),radial-gradient(55% 40% at 92% 86%,color-mix(in srgb,var(--today) 50%,transparent),transparent 70%),radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%),var(--bg);
+  animation:rl-masuk .6s ease backwards}
+.rl.rl-pergi{pointer-events:none;animation:rl-keluar .5s ease forwards}
+.rl-p{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.rl-p i{position:absolute;bottom:-24px;border-radius:50%;background:color-mix(in srgb,var(--today) 60%,transparent);opacity:0;animation:rl-naik linear infinite}
+.rl-k{position:relative;width:min(380px,100%);text-align:center;padding:30px 20px 26px;border-radius:28px;background:var(--g-bg);border:1px solid var(--g-garis);box-shadow:inset 0 1px 0 var(--g-atas),0 12px 28px -8px rgba(90,60,40,.16),0 32px 64px -20px rgba(90,60,40,.2);animation:rl-kartu 1s var(--mulus) .15s backwards}
+.rl-ring{position:relative;width:92px;height:92px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:var(--emas)}
+.rl-ring::before{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--emas-garis)}
+.rl-ring i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--emas-garis);opacity:0;animation:rl-riak 2.4s ease-out infinite 1s}
+.rl-ring i+i{animation-delay:1.8s}
+.rl-ring svg{position:relative;width:46px;height:46px;animation:rl-bintang 1.1s cubic-bezier(.34,1.56,.64,1) .5s backwards,rl-denyut 2.6s ease-in-out 1.8s infinite}
+.rl-s{margin:0 0 4px;color:var(--emas);font-size:.72rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;animation:rl-jelas 1s var(--mulus) .6s backwards}
+.rl-j{margin:0 0 10px;font-family:"Fraunces",Georgia,serif;font-size:clamp(2.2rem,11vw,2.9rem);font-weight:600;letter-spacing:-.01em;line-height:1.1;color:var(--ink);animation:rl-cahaya 3s ease-in-out 2.4s infinite}
+.rl-h{display:inline-block;animation:rl-huruf .7s var(--mulus) backwards}
+.rl-sp{display:inline-block;width:.3em}
+.rl-t{margin:0 0 14px;color:var(--muted);font-size:.9rem;line-height:1.5;animation:rl-jelas 1.1s var(--mulus) 2s backwards}
+.rl-d{display:flex;justify-content:center;gap:7px;animation:rl-jelas .8s var(--mulus) 2.3s backwards}
+.rl-d i{width:8px;height:8px;border-radius:50%;background:var(--today);animation:rl-titik 1.2s ease-in-out infinite}
+.rl-d i:nth-child(2){animation-delay:.18s}
+.rl-d i:nth-child(3){animation-delay:.36s}
+.rl-k .b{margin-top:16px}
+@keyframes rl-masuk{from{opacity:0}}
+@keyframes rl-keluar{to{opacity:0}}
+@keyframes rl-kartu{from{opacity:0;transform:translateY(24px) scale(.94);filter:blur(10px)}}
+@keyframes rl-bintang{from{opacity:0;transform:scale(.2) rotate(-120deg)}}
+@keyframes rl-denyut{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.12) rotate(8deg)}}
+@keyframes rl-riak{0%{opacity:.7;transform:scale(.55)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes rl-jelas{from{opacity:0;transform:translateY(10px);filter:blur(8px)}}
+@keyframes rl-huruf{from{opacity:0;transform:translateY(18px) scale(.8);filter:blur(8px)}}
+@keyframes rl-cahaya{0%,100%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 22px color-mix(in srgb,var(--today) 55%,transparent)}}
+@keyframes rl-titik{0%,80%,100%{transform:translateY(0);opacity:.45}40%{transform:translateY(-7px);opacity:1}}
+@keyframes rl-naik{0%{opacity:0;transform:translateY(0) scale(.6)}15%{opacity:.7}100%{opacity:0;transform:translateY(-105vh) scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.rl,.rl *,.rl-k{animation:none!important}.rl-p{display:none}}
+/* kartu Status rilis (tab Pemilik) */
+.dv .rlrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
+.dv button.rlik{all:unset;box-sizing:border-box;flex:none;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.6rem;font-weight:800;line-height:1;color:#fff;background:#2f8f5b;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 4px 12px rgba(0,0,0,.2);transition:background .25s var(--mulus),transform .35s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent}
+.dv button.rlik.x{background:#c0472f}
+.dv button.rlik:active{transform:scale(.9)}
+.dv button.rlik:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.dv button.rlik:disabled{opacity:.55;cursor:default}
+.dv .rlst{flex:1 1 160px;min-width:0;font-weight:800}
+.dv .rlst small{display:block;margin-top:2px;color:var(--muted);font-weight:700;font-size:.75rem;line-height:1.4}
 </style>
 <script>
 /* Tema: sistem / terang / malam. Cara kerja: syarat @media (prefers-color-scheme:dark) di stylesheet dipaksa "all" (malam), "not all" (terang), atau dikembalikan (sistem), jadi semua gaya gelap ikut berubah tanpa menulis ulang CSS. */
@@ -1097,6 +1142,15 @@ button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
   <h2>Pemilik</h2>
   <p class="addr">Khusus pemilik. Atur email yang boleh masuk, serta salin atau unduh berkas aplikasi untuk dipasang di Apps Script dan hosting.</p>
   <div class="dv">
+    <div class="kd" id="rilisk">
+      <h3>Status rilis</h3>
+      <p>Centang = fitur sudah rilis. Silang = setelah login, pengunjung melihat layar "Segera Rilis". Mode pemilik tidak terpengaruh.</p>
+      <div class="rlrow">
+        <button class="rlik" id="rlik" type="button" role="switch" aria-checked="true" aria-label="Status rilis">&#10003;</button>
+        <div class="rlst" id="rlst"><span>Sudah rilis</span><small></small></div>
+      </div>
+      <div class="bar"><button class="b alt" id="rlpv" type="button">Lihat contoh tampilan</button></div>
+    </div>
     <div class="kd" id="aksesk">
       <h3>Akses email</h3>
       <p>Album terkunci. Hanya email yang disetujui di sini yang bisa meminta kode masuk. Pemilik tetap masuk dengan PIN pemilik.</p>
@@ -4542,6 +4596,29 @@ button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
       });
     })();
     tb.hidden=!window.CLOUD_OWNER;
+    /* ===== Status rilis (pemilik): centang = rilis, silang = pengunjung melihat "Segera Rilis" setelah login ===== */
+    var RL=1;
+    function rlUi(){
+      var b=document.getElementById("rlik"), s=document.getElementById("rlst"); if(!b||!s) return;
+      b.textContent=RL?"✓":"✕"; b.className="rlik"+(RL?"":" x"); b.setAttribute("aria-checked",RL?"true":"false");
+      s.firstChild.textContent=RL?"Sudah rilis":"Belum rilis";
+      s.lastChild.textContent=RL?"Pengunjung bisa langsung memakai album.":"Pengunjung melihat “Segera Rilis” setelah login.";
+    }
+    (function(){
+      var b=document.getElementById("rlik"), pv=document.getElementById("rlpv"); if(!b) return;
+      b.addEventListener("click",function(){
+        if(!ensurePin()) return;
+        var nv=RL?0:1; b.disabled=true;
+        cpost({a:"rl",pin:PIN,v:nv},0).then(function(j){
+          b.disabled=false;
+          if(j&&j.ok){RL=nv; window.__rlv=RL; rlUi(); toast(nv?"Ditandai sudah rilis":"Ditandai belum rilis: pengunjung melihat Segera Rilis"); segarCacheDaftar(); return;}
+          if(j&&j.e==="aksi tidak dikenal") alert("Perbarui Code.gs di Apps Script dan deploy ulang dulu agar status rilis bisa disimpan.");
+          else bad(j);
+        }).catch(function(){b.disabled=false; alert("Gagal terhubung.");});
+      });
+      if(pv) pv.addEventListener("click",function(){if(window.RILIS) RILIS.preview();});
+      rlUi();
+    })();
     /* tombol di tab File developer (hanya pemilik): salin Code.gs per bagian atau semua, salin/unduh index.html */
     (function(){
       function bind(id,fn){var e=document.getElementById(id); if(e) e.addEventListener("click",fn);}
@@ -4698,7 +4775,7 @@ button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
         Object.keys(j.p||{}).forEach(function(n){cp[n]=j.p[n];ow[j.p[n]]=r.i;});
         if(r.i===0&&j.ur&&typeof j.ur==="object") UR=j.ur;
         if(r.i===0&&j.c&&typeof j.c==="object") Object.keys(j.c).forEach(function(d){if(typeof j.c[d]==="string") COV[d]=j.c[d];});
-        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; if(j.mc&&typeof j.mc==="object") MCOV=j.mc; }
+        if(r.i===0){ if(j.n&&typeof j.n==="object") SN=j.n; if(Array.isArray(j.x)) SX=j.x; if(j.mn&&typeof j.mn==="object") MOMEN=j.mn; if(j.mi&&typeof j.mi==="object") MIDS=j.mi; if(j.mc&&typeof j.mc==="object") MCOV=j.mc; if(typeof j.rl!=="undefined"){RL=j.rl?1:0; window.__rlv=RL; rlUi(); if(window.RILIS) RILIS.set(RL);} }
         Object.keys(j.mf||{}).forEach(function(sl){
           var bx=MV[sl]=MV[sl]||{};
           Object.keys(j.mf[sl]).forEach(function(d){var ar=bx[d]=bx[d]||[]; j.mf[sl][d].forEach(function(f){ow[f.i]=r.i;if(f.p)ow[f.p]=r.i;ar.push(f);});});
@@ -4901,6 +4978,120 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
   },true);
 })();
 </script>
+<script>
+/* ===== Segera Rilis: tampil setelah login bila pemilik menandai fitur belum rilis (silang), dengan animasi dan efek suara. Tidak berlaku di mode pemilik. ===== */
+(function(){
+  var html=document.documentElement, ov=null, ac=null, played=false, preview=false;
+  function kurang(){return !!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);}
+  function audioOn(){
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!ac&&AC){try{ac=new AC();}catch(e){ac=null;}}
+    if(ac&&ac.state==="suspended"){try{var r=ac.resume();if(r&&r.catch)r.catch(function(){});}catch(e){}}
+  }
+  /* efek suara (WebAudio, tanpa berkas): desir masuk, dentuman halus, empat lonceng naik, kilau kecil */
+  function bunyi(){
+    if(!ac||ac.state!=="running"||document.hidden) return false;
+    try{
+      var t=ac.currentTime+0.03, m=ac.createGain(), kp=ac.createDynamicsCompressor();
+      m.gain.value=0.8; m.connect(kp); kp.connect(ac.destination);
+      var n=Math.floor(ac.sampleRate*2), nb=ac.createBuffer(1,n,ac.sampleRate), d=nb.getChannelData(0);
+      for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+      var desir=function(t0,dur,f0,f1,pk){
+        var s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+        s.buffer=nb; f.type="bandpass"; f.Q.value=1.5;
+        f.frequency.setValueAtTime(f0,t0); f.frequency.exponentialRampToValueAtTime(f1,t0+dur);
+        g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(pk,t0+dur*0.45); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+        s.connect(f); f.connect(g); g.connect(m); s.start(t0); s.stop(t0+dur+0.02);
+      };
+      var dentum=function(t0,fr,pk,dur){
+        var o=ac.createOscillator(), g=ac.createGain();
+        o.type="sine"; o.frequency.setValueAtTime(fr,t0); o.frequency.exponentialRampToValueAtTime(Math.max(40,fr*0.4),t0+dur);
+        g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(pk,t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+        o.connect(g); g.connect(m); o.start(t0); o.stop(t0+dur+0.02);
+      };
+      var lonceng=function(t0,fr,pk,dur){
+        [[1,1],[2.01,0.28],[3.02,0.1]].forEach(function(h){
+          var o=ac.createOscillator(), g=ac.createGain();
+          o.type="sine"; o.frequency.value=fr*h[0];
+          g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(pk*h[1],t0+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+          o.connect(g); g.connect(m); o.start(t0); o.stop(t0+dur+0.05);
+        });
+      };
+      var ketuk=function(t0,pk){
+        var s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+        s.buffer=nb; f.type="highpass"; f.frequency.value=3000;
+        g.gain.setValueAtTime(0.0001,t0); g.gain.linearRampToValueAtTime(pk,t0+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.05);
+        s.connect(f); f.connect(g); g.connect(m); s.start(t0); s.stop(t0+0.07);
+      };
+      desir(t,0.9,300,3400,0.9);
+      dentum(t+0.8,120,0.3,0.35);
+      [[1046.5,0.9],[1318.5,1.05],[1568,1.2],[2093,1.45]].forEach(function(x){lonceng(t+x[1],x[0],0.16,1.4);});
+      for(var k=0;k<5;k++) ketuk(t+1.0+k*0.17,0.08);
+      desir(t+2.4,0.8,3200,500,0.5);
+      return true;
+    }catch(e){return false;}
+  }
+  /* bila browser belum mengizinkan suara, mainkan begitu layar disentuh */
+  function mainkan(){
+    if(!ov||played) return;
+    audioOn();
+    if(bunyi()){played=true;return;}
+    if(ac&&ac.state==="suspended"){
+      try{ac.resume().then(function(){if(ov&&!played&&bunyi()) played=true;}).catch(function(){});}catch(e){}
+    }
+  }
+  ["pointerdown","keydown","touchend"].forEach(function(ev){
+    document.addEventListener(ev,function(){if(ov&&!played) setTimeout(mainkan,30);},{passive:true});
+  });
+  function bangun(pv){
+    var o=document.createElement("div"), sp="", hr=[];
+    o.id="rilisOv"; o.className="rl"; o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true"); o.setAttribute("aria-label","Segera Rilis");
+    for(var i=0;i<14;i++){
+      var w=4+Math.random()*8;
+      sp+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;width:'+w.toFixed(1)+'px;height:'+w.toFixed(1)+'px;animation-duration:'+(6+Math.random()*6).toFixed(1)+'s;animation-delay:'+(Math.random()*5).toFixed(1)+'s"></i>';
+    }
+    "Segera Rilis".split("").forEach(function(c,i){
+      hr.push(c===" "?'<span class="rl-sp"></span>':'<span class="rl-h" style="animation-delay:'+(0.95+i*0.07).toFixed(2)+'s">'+c+'</span>');
+    });
+    o.innerHTML='<div class="rl-p" aria-hidden="true">'+sp+'</div>'
+      +'<div class="rl-k"><div class="rl-ring" aria-hidden="true"><i></i><i></i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16v4M17 18h4"/></svg></div>'
+      +'<p class="rl-s">Fitur baru</p>'
+      +'<h2 class="rl-j" aria-label="Segera Rilis">'+hr.join("")+'</h2>'
+      +'<p class="rl-t">Sedang disiapkan. Nantikan segera ya, insyaAllah.</p>'
+      +'<div class="rl-d" aria-hidden="true"><i></i><i></i><i></i></div>'
+      +(pv?'<button type="button" class="b alt" id="rlTutup">Tutup contoh</button>':'')+'</div>';
+    return o;
+  }
+  function inertSet(on){[].forEach.call(document.querySelectorAll("main,.panel,.tabs"),function(e){e.inert=on;});}
+  function sembunyi(){
+    if(!ov) return;
+    var o=ov; ov=null; played=false; preview=false;
+    html.classList.remove("rilis"); inertSet(false);
+    if(kurang()){o.remove();return;}
+    o.classList.add("rl-pergi"); setTimeout(function(){o.remove();},520);
+  }
+  function tampil(pv){
+    if(ov){ov.remove();ov=null;}
+    preview=!!pv; played=false;
+    ov=bangun(pv); document.body.appendChild(ov);
+    html.classList.add("rilis"); inertSet(true);
+    var tb=ov.querySelector("#rlTutup"); if(tb){tb.addEventListener("click",sembunyi); try{tb.focus({preventScroll:true});}catch(e){}}
+    mainkan();
+  }
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&ov&&preview) sembunyi();});
+  window.RILIS={
+    /* rl: 0 = belum rilis (silang), selain itu sudah rilis (centang) */
+    set:function(rl){
+      var belum=(rl===0||rl===false||rl==="0");
+      if(window.CLOUD_OWNER||!belum){if(ov&&!preview) sembunyi(); return;}
+      if(html.classList.contains("kunci")) return;   /* belum login: tunggu daftar dimuat setelah masuk */
+      if(!ov) tampil(false);
+    },
+    preview:function(){tampil(true);}
+  };
+  if(typeof window.__rlv!=="undefined") window.RILIS.set(window.__rlv);
+})();
+</script>
 <script type="text/plain" id="kodegs">/* Penghubung Album SWTQIS-10 <-> Google Drive.
    Folder Drive tetap pribadi. Pengunjung hanya bisa melihat lewat album;
    menambah/menghapus butuh PIN pemilik.
@@ -4914,6 +5105,7 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
    Versi 6: album terkunci; masuk lewat email yang disetujui pemilik + kode 6 angka (lihat GERBANG AKSES EMAIL).
    Tambahan: daftar santri bisa diubah dari app (tambah, ubah nama, hapus) lewat aksi 'sn' dan 'sd'.
    Disimpan di Script Properties akun pertama: N_slug = nama santri, X_slug = santri yang dihapus. */
+/* Versi 7: status rilis (aksi 'rl', properti RL). Bila belum rilis, pengunjung melihat layar "Segera Rilis" setelah login; mode pemilik tidak terpengaruh. */
 
 const PIN = 'GANTI-PIN-INI';            // <-- ganti dengan PIN pemilik (sama untuk semua akun)
 const NAMA_FOLDER = 'Album SWTQIS-10 (Drive)';
@@ -5069,6 +5261,10 @@ function ur_() {
   } catch (e) {}
   return r;
 }
+// Status rilis: RL = '0' berarti belum rilis (pengunjung melihat "Segera Rilis" setelah login); selain itu dianggap sudah rilis
+function rilis_() {
+  try { return PropertiesService.getScriptProperties().getProperty('RL') === '0' ? 0 : 1; } catch (e) { return 1; }
+}
 function miSet_(sl, ids) {
   const sp = PropertiesService.getScriptProperties(), ap = sp.getProperties(), re = new RegExp('^MI_' + sl + '_\\d+$');
   Object.keys(ap).forEach(function (k) { if (re.test(k)) sp.deleteProperty(k); });
@@ -5166,7 +5362,7 @@ function doGet(e) {
       const p = {};
       Object.keys(prof).forEach(function (n) { p[n] = prof[n].i; });
       const sg = santri_();
-      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_(), mc: momenCov_(), ur: ur_() });
+      const js = JSON.stringify({ k: k, p: p, c: cov_(), n: sg.n, x: sg.x, mn: momen_(), mi: mi_(), mc: momenCov_(), ur: ur_(), rl: rilis_() });
       cput_('L', js, 600);
       return ContentService.createTextOutput(js).setMimeType(ContentService.MimeType.JSON);
     }
@@ -5795,6 +5991,12 @@ function doPost(e) {
       miSet_(sl, hasil);
       bust_();
       return out_({ ok: true, i: hasil });
+    }
+    if (b.a === 'rl') {
+      // status rilis: v = 1 (centang, sudah rilis) atau 0 (silang, pengunjung melihat "Segera Rilis")
+      PropertiesService.getScriptProperties().setProperty('RL', b.v ? '1' : '0');
+      bust_();
+      return out_({ ok: true });
     }
     if (b.a === 'ur') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(b.k)) return out_({ ok: false, e: 'tanggal tidak valid' });
