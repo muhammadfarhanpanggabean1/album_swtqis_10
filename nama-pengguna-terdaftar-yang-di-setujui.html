@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Pengguna Terdaftar · Album SWTQIS-10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  Daftar ini dibaca dari Google Sheets lewat Google Apps Script (lihat tambahan-kode.gs).
+  Hanya baris yang kolom "disetujui"-nya ✓ yang tampil. Email sudah disamarkan di server.
+  Kolom kode tidak pernah dikirim ke halaman ini.
+-->
+<style>
+  :root{
+    --cream:#FDEEE0;
+    --paper:#FFFAF6;
+    --brown:#5A463B;
+    --brown-soft:#7A6253;
+    --blue:#9DD2F2;
+    --blue-wash:#D2E2E8;
+    --peach:#FAD9C1;
+    --error:#B3402A;
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --sans:"Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;min-height:100vh;min-height:100dvh;
+    background:var(--cream);color:var(--brown);
+    font-family:var(--sans);font-size:17px;line-height:1.5;
+    padding:calc(32px + env(safe-area-inset-top)) 22px calc(40px + env(safe-area-inset-bottom));
+    position:relative;overflow-x:hidden;
+  }
+  body::before,body::after{content:"";position:fixed;border-radius:50%;z-index:-1;pointer-events:none}
+  body::before{width:min(150vw,720px);aspect-ratio:1;left:-38%;top:-12%;background:var(--blue-wash)}
+  body::after{width:min(110vw,520px);aspect-ratio:1;right:-48%;bottom:-16%;background:var(--peach)}
+  main{max-width:460px;margin:0 auto}
+  h1{
+    font-family:var(--serif);font-weight:700;font-size:clamp(2.2rem,10.5vw,3rem);
+    line-height:1.04;letter-spacing:-.01em;margin:8px 0 12px;
+  }
+  .lead{margin:0 0 22px;font-weight:600;font-size:1.05rem;max-width:32ch}
+  .card{
+    background:var(--paper);border:4px solid var(--brown);border-radius:30px;
+    padding:8px 20px;box-shadow:0 18px 40px -16px rgba(90,70,59,.35);
+  }
+  .card.pesan{padding:24px 22px}
+  .card h2{font-family:var(--serif);font-size:1.5rem;line-height:1.15;margin:0 0 8px}
+  .card p{margin:0;font-weight:600}
+
+  /* ringkasan jumlah */
+  .jumlah{margin:0 2px 12px;font-size:.92rem;font-weight:800;color:var(--brown-soft)}
+
+  /* daftar bernomor: kolom nomor selebar tetap supaya rapi */
+  .daftar{list-style:none;margin:0;padding:0;--no:2}
+  .daftar li{
+    display:grid;grid-template-columns:calc(var(--no) * 1ch + 22px) 1fr;
+    column-gap:14px;align-items:center;padding:14px 0;
+    border-top:2px dashed rgba(90,70,59,.2);
+  }
+  .daftar li:first-child{border-top:0}
+  .no{
+    display:block;text-align:center;padding:6px 0;border-radius:12px;
+    background:var(--blue-wash);color:var(--brown);
+    font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum" 1;
+  }
+  .nama{display:block;font-weight:800;font-size:1.04rem;line-height:1.25;overflow-wrap:anywhere}
+  .email{display:block;font-weight:600;font-size:.88rem;color:var(--brown-soft);overflow-wrap:anywhere}
+
+  button{
+    font:inherit;font-weight:800;font-size:1rem;color:var(--brown);
+    background:var(--blue);border:0;border-radius:999px;padding:12px 22px;margin-top:14px;
+    cursor:pointer;transition:transform .12s,filter .15s;
+  }
+  button:hover{filter:brightness(.97)}
+  button:active{transform:scale(.98)}
+  button:focus-visible{outline:3px solid var(--brown);outline-offset:3px}
+  button[disabled]{opacity:.55;cursor:default}
+  .status{min-height:1.4em;margin:12px 2px 0;font-size:.9rem;font-weight:700;color:var(--brown-soft)}
+  .status.err{color:var(--error)}
+
+  @media (prefers-reduced-motion:no-preference){
+    .card{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<noscript><main><h1>Aktifkan JavaScript</h1><p class="lead">Halaman ini membutuhkan JavaScript untuk berjalan.</p></main></noscript>
+
+<script>
+(function(){
+  "use strict";
+
+  /* Alamat /exec Google Apps Script. Samakan dengan ENDPOINT di pendaftaran-email.html. */
+  var ENDPOINT = "https://script.google.com/macros/s/AKfycbwtGntfDU9JwErNktYSzDb5pIjxGBnE9bp9h46q_pVQ1H2fxqjcNypz1c5GzUTcvGDa/exec";
+  var SEGARKAN_DETIK = 60;
+
+  var app = document.getElementById("app");
+
+  /* Hanya browser bawaan Instagram yang menyertakan kata "Instagram" di user agent. */
+  var ua = navigator.userAgent || "";
+  if(!/Instagram/i.test(ua)){
+    app.innerHTML =
+      '<h1>Buka lewat Instagram</h1>' +
+      '<div class="card pesan"><h2>Halaman ini tidak tersedia di browser ini</h2>' +
+      '<p>Daftar ini hanya bisa dibuka dari dalam browser Instagram. Buka tautannya dari Instagram, lalu coba lagi.</p></div>';
+    return;
+  }
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  app.innerHTML =
+    '<h1>Pengguna terdaftar</h1>' +
+    '<p class="lead">Daftar pengguna yang sudah disetujui untuk masuk ke Album SWTQIS-10.</p>' +
+    '<div id="isi"></div>' +
+    '<p class="status" id="status" role="status" aria-live="polite"></p>';
+
+  var isi = document.getElementById("isi");
+  var statusEl = document.getElementById("status");
+  var sudahAdaDaftar = false;
+  var sedangMuat = false;
+
+  function tampilDaftar(data){
+    sudahAdaDaftar = true;
+    if(!data.length){
+      isi.innerHTML =
+        '<div class="card pesan"><h2>Belum ada pengguna</h2>' +
+        '<p>Belum ada pengguna yang disetujui. Daftar akan muncul di sini setelah ada yang disetujui.</p></div>';
+      return;
+    }
+    /* Nomor dihitung ulang berurutan dari yang tampil, lebar kolom ikut jumlah digit. */
+    var lebar = Math.max(2, String(data.length).length);
+    var html = '<p class="jumlah">' + data.length + ' pengguna disetujui</p>' +
+               '<div class="card"><ol class="daftar" style="--no:' + lebar + '">';
+    for(var i = 0; i < data.length; i++){
+      var no = String(i + 1);
+      while(no.length < lebar){ no = "0" + no; }
+      html += '<li><span class="no">' + no + '</span>' +
+              '<span><span class="nama">' + esc(data[i].nama || "Tanpa nama") + '</span>' +
+              '<span class="email">' + esc(data[i].email || "") + '</span></span></li>';
+    }
+    html += '</ol></div>';
+    isi.innerHTML = html;
+  }
+
+  function tampilGalat(){
+    if(sudahAdaDaftar){
+      statusEl.className = "status err";
+      statusEl.textContent = "Belum bisa memperbarui daftar. Daftar di atas mungkin belum terbaru.";
+      return;
+    }
+    isi.innerHTML =
+      '<div class="card pesan"><h2>Daftar belum bisa dimuat</h2>' +
+      '<p>Periksa koneksi internetmu, lalu muat ulang.</p>' +
+      '<button type="button" id="ulang">Muat ulang</button></div>';
+    document.getElementById("ulang").addEventListener("click", muat);
+  }
+
+  function muat(){
+    if(sedangMuat){ return; }
+    sedangMuat = true;
+    if(!sudahAdaDaftar){
+      isi.innerHTML = '<div class="card pesan"><p>Memuat daftar…</p></div>';
+    }
+    statusEl.className = "status";
+    statusEl.textContent = "";
+
+    fetch(ENDPOINT + "?aksi=daftar-disetujui&t=" + Date.now(), {cache: "no-store"})
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      if(!json || json.ok !== true || !Array.isArray(json.data)){ throw new Error("format"); }
+      tampilDaftar(json.data);
+    })
+    .catch(tampilGalat)
+    .then(function(){ sedangMuat = false; });
+  }
+
+  muat();
+  setInterval(function(){ if(!document.hidden){ muat(); } }, SEGARKAN_DETIK * 1000);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden){ muat(); } });
+})();
+</script>
+</body>
+</html>
