@@ -5049,6 +5049,13 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
   ["pointerdown","keydown","touchend"].forEach(function(ev){
     document.addEventListener(ev,function(){if(ov&&!played) setTimeout(mainkan,30);},{passive:true});
   });
+  /* Kembali ke login: hapus akses tersimpan di perangkat (termasuk mode pemilik) lalu muat ulang, sehingga gerbang login tampil */
+  function kembaliLogin(){
+    try{localStorage.removeItem("album-akses");sessionStorage.removeItem("album-akses");localStorage.removeItem("album-owner");localStorage.removeItem("album-pin");}catch(e){}
+    try{if(window.caches) caches.delete("album-drive-v1");}catch(e){}
+    try{localStorage.removeItem("album-siap-v1");localStorage.removeItem("album-siap-st");}catch(e){}
+    location.reload();
+  }
   function bangun(pv){
     var o=document.createElement("div"), sp="", hr=[];
     o.id="rilisOv"; o.className="rl"; o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true"); o.setAttribute("aria-label","Segera Rilis");
@@ -5064,7 +5071,7 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
       +'<h2 class="rl-j" aria-label="Segera Rilis">'+hr.join("")+'</h2>'
       +'<p class="rl-t">Sedang disiapkan. Nantikan segera ya, insyaAllah.</p>'
       +'<div class="rl-d" aria-hidden="true"><i></i><i></i><i></i></div>'
-      +(pv?'<button type="button" class="b alt" id="rlTutup">Tutup contoh</button>':'')+'</div>';
+      +(pv?'<button type="button" class="b alt" id="rlTutup">Tutup contoh</button>':'<button type="button" class="b alt" id="rlKembali">Kembali ke login</button>')+'</div>';
     return o;
   }
   function inertSet(on){[].forEach.call(document.querySelectorAll("main,.panel,.tabs"),function(e){e.inert=on;});}
@@ -5080,6 +5087,7 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
     preview=!!pv; played=false;
     ov=bangun(pv); document.body.appendChild(ov);
     html.classList.add("rilis"); inertSet(true);
+    var kb=ov.querySelector("#rlKembali"); if(kb) kb.addEventListener("click",kembaliLogin);
     var tb=ov.querySelector("#rlTutup"); if(tb){tb.addEventListener("click",sembunyi); try{tb.focus({preventScroll:true});}catch(e){}}
     mainkan();
   }
