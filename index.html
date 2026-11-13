@@ -5049,12 +5049,14 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
   ["pointerdown","keydown","touchend"].forEach(function(ev){
     document.addEventListener(ev,function(){if(ov&&!played) setTimeout(mainkan,30);},{passive:true});
   });
-  /* Kembali ke login: hapus akses tersimpan di perangkat (termasuk mode pemilik) lalu muat ulang, sehingga gerbang login tampil */
-  function kembaliLogin(){
-    try{localStorage.removeItem("album-akses");sessionStorage.removeItem("album-akses");localStorage.removeItem("album-owner");localStorage.removeItem("album-pin");}catch(e){}
-    try{if(window.caches) caches.delete("album-drive-v1");}catch(e){}
-    try{localStorage.removeItem("album-siap-v1");localStorage.removeItem("album-siap-st");}catch(e){}
-    location.reload();
+  /* ketuk tulisan "Segera Rilis" 10 kali berturut-turut: minta PIN pemilik, lalu masuk mode pemilik */
+  function masukPemilik(){
+    var p=prompt("Masukkan PIN pemilik"); if(!p) return;
+    var u=(window.CLOUD_URLS&&window.CLOUD_URLS[0])||window.CLOUD_URL; if(!u) return;
+    fetch(u,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({a:"ao",pin:p})}).then(function(r){return r.json();}).then(function(j){
+      if(j&&j.ok&&j.t){try{localStorage.setItem("album-owner","1");localStorage.setItem("album-pin",p);}catch(e){} location.reload();}
+      else alert("PIN pemilik salah.");
+    }).catch(function(){alert("Tidak bisa terhubung. Periksa internet lalu coba lagi.");});
   }
   function bangun(pv){
     var o=document.createElement("div"), sp="", hr=[];
@@ -5071,7 +5073,7 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
       +'<h2 class="rl-j" aria-label="Segera Rilis">'+hr.join("")+'</h2>'
       +'<p class="rl-t">Sedang disiapkan. Nantikan segera ya, insyaAllah.</p>'
       +'<div class="rl-d" aria-hidden="true"><i></i><i></i><i></i></div>'
-      +(pv?'<button type="button" class="b alt" id="rlTutup">Tutup contoh</button>':'<button type="button" class="b alt" id="rlKembali">Kembali ke login</button>')+'</div>';
+      +(pv?'<button type="button" class="b alt" id="rlTutup">Tutup contoh</button>':'')+'</div>';
     return o;
   }
   function inertSet(on){[].forEach.call(document.querySelectorAll("main,.panel,.tabs"),function(e){e.inert=on;});}
@@ -5087,7 +5089,14 @@ if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.a
     preview=!!pv; played=false;
     ov=bangun(pv); document.body.appendChild(ov);
     html.classList.add("rilis"); inertSet(true);
-    var kb=ov.querySelector("#rlKembali"); if(kb) kb.addEventListener("click",kembaliLogin);
+    var jd=ov.querySelector(".rl-j");
+    if(jd&&!pv){
+      var n=0,tm=0; jd.style.touchAction="manipulation";
+      jd.addEventListener("click",function(){
+        clearTimeout(tm); n++; tm=setTimeout(function(){n=0;},2000);
+        if(n<10) return; n=0; masukPemilik();
+      });
+    }
     var tb=ov.querySelector("#rlTutup"); if(tb){tb.addEventListener("click",sembunyi); try{tb.focus({preventScroll:true});}catch(e){}}
     mainkan();
   }
