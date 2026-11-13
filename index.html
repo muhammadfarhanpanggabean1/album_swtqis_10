@@ -378,7 +378,8 @@ button.b.alt.emas.ikon[hidden]{display:none}
 #lbclose{color:#e2c077;background:rgba(255,255,255,.08);border-color:#b8964f}
 /* ===== Ubin foto: kilau saat memuat, memudar masuk, dan kartu rapi bila gagal dimuat ===== */
 @keyframes kilau{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.ph:not(.ld):not(.gagal),.sgal .st:not(.ok):not(.gagal){background:linear-gradient(100deg,var(--accent-soft) 30%,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)) 50%,var(--accent-soft) 70%);background-size:200% 100%;animation:kilau 1.6s linear 6}
+/* Loading hanya tampil setelah berhasil login (html.kunci hilang). Tujuh bagian: sampul tanggal kalender, halaman tanggal, sampul santri, halaman santri, sampul momen, halaman momen, galeri */
+html:not(.kunci) .ph:not(.ld):not(.gagal),html:not(.kunci) .sgal .st:not(.ok):not(.gagal),html:not(.kunci) .cal .day.has:not(.ok):not(.gagal),html:not(.kunci) .sant .av:has(img):not(.ada){background:linear-gradient(100deg,var(--accent-soft) 30%,color-mix(in srgb,var(--accent-soft) 55%,var(--surface)) 50%,var(--accent-soft) 70%);background-size:200% 100%;animation:kilau 1.6s linear 6}
 .ph img{opacity:0}
 .ph.ld img{opacity:1}
 .ph.ld img.ghost{opacity:.22}
@@ -388,7 +389,7 @@ button.b.alt.emas.ikon[hidden]{display:none}
 .ph.gagal img,.sgal .st.gagal img,.day.has.gagal img{display:none}
 .ph.gagal::before,.sgal .st.gagal::before{content:"";position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-26px 0 0 -14px;opacity:.6;background:no-repeat center/contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a8272' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='4.5' width='17' height='15' rx='3'/><circle cx='9' cy='10' r='1.6'/><path d='M4 17l5-4.5 4 3.5 3-2.5 4 3.5'/></svg>")}
 .ph.gagal::after,.sgal .st.gagal::after{content:"Belum tersedia";position:absolute;left:0;right:0;top:50%;margin-top:10px;text-align:center;font-size:.72rem;font-weight:700;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.ph:not(.ld):not(.gagal),.sgal .st:not(.ok):not(.gagal){animation:none}.sgal .st img{transition:none}}
+@media (prefers-reduced-motion:reduce){html:not(.kunci) .ph:not(.ld):not(.gagal),html:not(.kunci) .sgal .st:not(.ok):not(.gagal),html:not(.kunci) .cal .day.has:not(.ok):not(.gagal),html:not(.kunci) .sant .av:has(img):not(.ada){animation:none}.sgal .st img{transition:none}}
 #lbplay{position:absolute;z-index:2;width:68px;height:68px;min-width:0;padding:0 0 0 4px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;line-height:1;background:rgba(0,0,0,.6);color:#fff;border:2px solid rgba(255,255,255,.85);box-shadow:0 4px 18px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #lbplay[hidden]{display:none}
 #lbplay:focus-visible{outline:3px solid #e2c077;outline-offset:3px}
@@ -530,7 +531,10 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
 .prp-mini .prp-kartu{display:none}
 .prp-mini .prp-bar{height:3px;margin:0;border-radius:0;background:transparent}
 .prp-mini .prp-pil{position:absolute;left:50%;top:7px;transform:translateX(-50%);white-space:nowrap;font-size:.7rem;font-weight:800;color:var(--ink);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:2px 10px;box-shadow:0 2px 8px rgba(90,60,40,.14)}
-@media (prefers-reduced-motion:reduce){.prp-bar i{transition:none}.prp.prp-selesai{transition:none}}
+/* layar muat awal setelah login: bar berjalan sampai daftar dan foto siap */
+.prp-ind .prp-bar i{width:38%;transform:none;transition:none;animation:prpgeser 1.3s ease-in-out infinite}
+@keyframes prpgeser{0%{margin-left:-38%}100%{margin-left:100%}}
+@media (prefers-reduced-motion:reduce){.prp-bar i{transition:none}.prp.prp-selesai{transition:none}.prp-ind .prp-bar i{animation:none;width:100%;opacity:.6}}
 /* ===== Animasi bertahap gerbang masuk (sama seperti gerbang Habit) ===== */
 .gk h2,.gk .gp,.gk .gcek{animation:gb-jelas 1.8s var(--mulus) backwards}
 .gk .gsd{animation:gb-jelas 1.4s var(--mulus) backwards}
@@ -580,7 +584,73 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
 .ig-x{background:transparent;color:var(--ink);border:1px solid color-mix(in srgb,var(--ink) 22%,transparent)}
 .ig-h{font-size:12.5px;opacity:.8}
 @media (prefers-reduced-motion:reduce){.ig{animation:none}}
+/* ===== Tombol tema: sistem / terang / malam dalam satu tombol, di baris atas semua halaman ===== */
+.tbar{max-width:720px;height:42px;margin:0 auto;padding:8px 14px 0;box-sizing:border-box;display:flex;justify-content:flex-end}
+html.lebar .tbar{justify-content:flex-start}
+button.tema{width:34px;height:34px;margin:0;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--emas);background:color-mix(in srgb,var(--surface) 72%,transparent);border:1px solid var(--emas-garis);box-shadow:0 2px 8px rgba(90,60,40,.1);-webkit-tap-highlight-color:transparent;transition:transform .2s var(--mulus)}
+button.tema:active{transform:scale(.9)}
+button.tema:focus-visible{outline:2px solid var(--emas);outline-offset:2px}
+button.tema svg{width:18px;height:18px;display:block}
+button.tema.anim svg{animation:tmputar .3s var(--mulus)}
+/* di layar pembuka dan gerbang login: melayang di pojok kanan atas */
+button.tema.pojok{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));z-index:5}
+@keyframes tmputar{from{opacity:0;transform:rotate(-70deg) scale(.6)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){button.tema{transition:none}button.tema.anim svg{animation:none}}
+#temaToast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translate(-50%,-8px);z-index:120;opacity:0;pointer-events:none;padding:6px 14px;border-radius:999px;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:.8rem;font-weight:800;box-shadow:0 4px 14px rgba(90,60,40,.18);transition:opacity .2s ease,transform .2s ease}
+#temaToast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#temaToast{transition:none}}
 </style>
+<script>
+/* Tema: sistem / terang / malam. Cara kerja: syarat @media (prefers-color-scheme:dark) di stylesheet dipaksa "all" (malam), "not all" (terang), atau dikembalikan (sistem), jadi semua gaya gelap ikut berubah tanpa menulis ulang CSS. */
+(function(){
+  var K="album-tema", M="sistem", ORDER=["sistem","terang","malam"], daftar=null;
+  var NM={sistem:"Sistem",terang:"Terang",malam:"Malam"};
+  var IK={
+    sistem:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"/></svg>',
+    terang:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/></svg>',
+    malam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 13.6A8.6 8.6 0 1 1 10.4 3.5a6.8 6.8 0 0 0 10.1 10.1z"/></svg>'
+  };
+  try{var v=localStorage.getItem(K); if(ORDER.indexOf(v)>0) M=v;}catch(e){}
+  var meta=[].slice.call(document.querySelectorAll('meta[name="theme-color"]')), metaAsli=meta.map(function(m){return m.content;});
+  function kumpul(){
+    daftar=[];
+    function jalan(list){
+      for(var i=0;i<list.length;i++){
+        var r=list[i];
+        if(r.media&&/prefers-color-scheme\s*:\s*dark/.test(r.media.mediaText)) daftar.push({r:r,t:r.media.mediaText});
+        else if(r.cssRules&&r.cssRules.length) jalan(r.cssRules);
+      }
+    }
+    for(var s=0;s<document.styleSheets.length;s++){try{jalan(document.styleSheets[s].cssRules);}catch(e){}}
+  }
+  function ikon(){
+    var bs=document.querySelectorAll("button.tema");
+    for(var i=0;i<bs.length;i++){var b=bs[i]; b.innerHTML=IK[M]; b.title="Tema: "+NM[M]; b.setAttribute("aria-label","Tema: "+NM[M]+". Ketuk untuk ganti.");}
+  }
+  function terapkan(){
+    if(!daftar) kumpul();
+    daftar.forEach(function(d){try{d.r.media.mediaText=M==="malam"?"all":(M==="terang"?"not all":d.t);}catch(e){}});
+    var de=document.documentElement;
+    de.style.colorScheme=M==="malam"?"dark":(M==="terang"?"light":"");
+    de.setAttribute("data-tema",M);
+    meta.forEach(function(m,i){m.content=M==="malam"?"#2a2220":(M==="terang"?"#fdeee0":metaAsli[i]);});
+    ikon();
+  }
+  var te=null, tt=0;
+  function kabar(t){
+    if(!te){te=document.createElement("div"); te.id="temaToast"; te.setAttribute("role","status"); document.body.appendChild(te);}
+    te.textContent=t; te.classList.add("on"); clearTimeout(tt); tt=setTimeout(function(){te.classList.remove("on");},1400);
+  }
+  if(M!=="sistem") terapkan();
+  document.addEventListener("DOMContentLoaded",ikon);
+  document.addEventListener("click",function(e){
+    var b=e.target&&e.target.closest&&e.target.closest("button.tema"); if(!b) return;
+    M=ORDER[(ORDER.indexOf(M)+1)%ORDER.length];
+    try{localStorage.setItem(K,M);}catch(x){}
+    [].forEach.call(document.querySelectorAll("button.tema"),function(x){x.classList.add("anim");}); terapkan(); kabar("Tema: "+NM[M]);
+  });
+})();
+</script>
 </head>
 <body>
 <div class="ig" id="ig" role="region" aria-label="Buka di Chrome" hidden>
@@ -612,8 +682,10 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
 </script>
 <div class="pb" id="pb" role="dialog" aria-modal="true" aria-label="Buka Album SWTQIS-10" hidden>
   <button class="b" id="pbBuka" type="button">Buka</button>
+  <button class="tema pojok" type="button" aria-label="Tema: Sistem. Ketuk untuk ganti."></button>
 </div>
 <div class="gb" id="gb" role="dialog" aria-modal="true" aria-label="Masuk Album SWTQIS-10">
+  <button class="tema pojok" type="button" aria-label="Tema: Sistem. Ketuk untuk ganti."></button>
   <div class="gk">
     <p class="gsd">Selamat datang di</p>
     <h2 id="gjudul">Album SWTQIS-10</h2>
@@ -765,8 +837,8 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   gb.addEventListener("animationstart",function(e){if(e.animationName==="gb-sapu") bunyiKilau();});
   /* ===== Efek suara gerbang (WebAudio, tanpa berkas, tanpa nada musik): hanya desir, ketukan, dan dentuman halus.
      Mengikuti animasi lewat animationstart, jadi tetap sinkron walau urutan penuh atau singkat.
-     Ubah VOL (0 sampai 1) untuk mengatur keras-pelannya. ===== */
-  var VOL=0.6, nbuf=null, mst=null, terakhirGalat=0, sambut=false;
+     Ubah VOL (0 sampai 1) untuk mengatur keras-pelannya; VOLK = volume khusus ketukan (tetap 0.6 saat VOL 0.8). ===== */
+  var VOL=0.8, VOLK=0.6, nbuf=null, mst=null, terakhirGalat=0, sambut=false;
   function siap(){return !!ac&&ac.state==="running"&&!document.hidden;}
   function master(){
     if(!mst||mst.context!==ac){mst=ac.createGain(); mst.gain.value=VOL; var kp=ac.createDynamicsCompressor(); mst.connect(kp); kp.connect(ac.destination);}
@@ -795,7 +867,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
     var s=ac.createBufferSource(); s.buffer=derau();
     var f=ac.createBiquadFilter(); f.type="highpass"; f.frequency.value=fc||2200;
     var g=ac.createGain();
-    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(puncak,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(puncak*VOLK/VOL,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
     s.connect(f); f.connect(g); g.connect(master()); s.start(t); s.stop(t+0.07);
   }
   /* dentum: ketukan rendah yang turun cepat (bukan nada) */
@@ -866,8 +938,25 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
     tampil(); langkah(1); msg(m||"");
     try{var e0=localStorage.getItem(EK); if(e0&&!ge.value){ge.value=e0;gs.checked=true;}}catch(e){}
   }
+  /* layar muat awal: begitu login berhasil, hanya layar ini yang tampil sampai foto siap (atau 30 detik) */
+  var muatEl=null, muatT=0, muatSudah=false;
+  function muatAwalTampil(){
+    if(muatSudah||document.getElementById("muatAwal")) return; muatSudah=true;
+    var o=document.createElement("div");
+    o.id="muatAwal"; o.className="prp prp-penuh prp-ind"; o.setAttribute("role","status"); o.setAttribute("aria-live","polite");
+    o.innerHTML='<div class="prp-kartu"><b>Memuat album</b><p>Sebentar ya, foto-foto sedang disiapkan.</p><div class="prp-bar"><i></i></div></div>';
+    document.body.appendChild(o); muatEl=o;
+    clearTimeout(muatT); muatT=setTimeout(function(){window.muatSelesai(false);},30000);
+  }
+  window.muatSelesai=function(cepat){
+    clearTimeout(muatT);
+    var o=muatEl||document.getElementById("muatAwal"); muatEl=null;
+    if(!o) return;
+    if(cepat||kurangGerak()){if(o.parentNode) o.parentNode.removeChild(o); return;}
+    o.classList.add("prp-selesai"); setTimeout(function(){if(o.parentNode) o.parentNode.removeChild(o);},450);
+  };
   function buka(){
-    terbuka=true; html.classList.remove("kunci"); tutupPembuka(true); gc.value=""; msg("");
+    terbuka=true; muatAwalTampil(); html.classList.remove("kunci"); tutupPembuka(true); gc.value=""; msg("");
     if(tampilSudah&&!gb.hidden){
       /* gerbang sedang terlihat: isi memudar dulu, baru ditutup */
       gb.classList.add("keluar"); clearTimeout(tutupT);
@@ -877,7 +966,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   }
   function kunciUlang(m){
     if(terbuka){terbuka=false;newReady();}
-    A.t="";A.tx=0;hapusRec();html.classList.add("kunci");form(m);
+    A.t="";A.tx=0;hapusRec();html.classList.add("kunci");if(window.muatSelesai) window.muatSelesai(true);form(m);
   }
   function setSibuk(on,btn,t){
     sibuk=on; [gk1,gk2,gul,ggn].forEach(function(b){b.disabled=on;});
@@ -953,6 +1042,7 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
   }else{bersihCache();html.classList.add("kunci");form();}
 })();
 </script>
+<div class="tbar" id="tbar"><button class="tema" type="button" aria-label="Tema: Sistem. Ketuk untuk ganti."></button></div>
 <main id="home">
   <header>
     <div class="nav">
@@ -3073,11 +3163,13 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
     var SIAP_KEY="album-siap-v1", SIAP_ST="album-siap-st", siapJalan=false;
     function siapTanda(){try{localStorage.setItem(SIAP_KEY,"1");}catch(e){}}
     function siapFmt(b){return b>=1073741824?(b/1073741824).toFixed(1)+" GB":Math.max(1,Math.round(b/1048576))+" MB";}
-    function siapUI(penuhMode,onLanjut){
+    function selesaiAwal(){if(window.muatSelesai) window.muatSelesai(false);}
+    function siapUI(penuhMode,onLanjut,teks){
+      if(penuhMode&&window.muatSelesai) window.muatSelesai(true);
       var o=document.createElement("div");
       o.className="prp "+(penuhMode?"prp-penuh":"prp-mini");
       o.setAttribute("role","status");
-      o.innerHTML='<div class="prp-kartu"><b>Menyiapkan album</b><p>Semua foto dan video diunduh dan disimpan di perangkat agar tampil mulus tanpa menunggu.</p>'
+      o.innerHTML='<div class="prp-kartu"><b>Menyiapkan album</b><p>'+(teks||'Semua foto dan video diunduh dan disimpan di perangkat agar tampil mulus tanpa menunggu.')+'</p>'
         +'<div class="prp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>'
         +'<div class="prp-info"><span class="prp-pct">0%</span><span class="prp-det"></span></div>'
         +'<p class="prp-cat">Memakai data internet. Disarankan memakai Wi\u2011Fi.</p>'
@@ -3106,8 +3198,8 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
       if(siapJalan) return;
       var net=navigator.connection||{}, eff=net.effectiveType||"";
       /* pengunjung: perilaku lama (hanya foto kecil); unduhan penuh khusus mode pemilik demi privasi */
-      if(!window.CLOUD_OWNER){bgPrefetch();return;}
-      if(!CC||navigator.onLine===false||net.saveData||/^(slow-2g|2g)$/.test(eff)){bgPrefetch();return;}
+      var pemilik=!!window.CLOUD_OWNER;
+      if(!CC||navigator.onLine===false||net.saveData||/^(slow-2g|2g)$/.test(eff)){bgPrefetch();selesaiAwal();return;}
       siapJalan=true;
       var pertama=true; try{pertama=localStorage.getItem(SIAP_KEY)!=="1";}catch(e){}
       var lambat=eff==="3g";
@@ -3132,8 +3224,8 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
         Object.keys(repo).sort().reverse().forEach(function(k){(repo[k]||[]).forEach(function(s){var u=thumbOf(ROOT+s); if(u!==ROOT+s) tst(u);});});
         Object.keys(santriMap).forEach(function(s){
           var e=santriMap[s]; if(!e) return;
+          /* hanya sampul profil; foto di halaman santri sengaja tidak dimuat di sini (privasi) */
           if(okSt(e.profil)) tst(santriThumb(ROOT+e.profil));
-          Object.keys(e.tanggal||{}).forEach(function(k){(e.tanggal[k]||[]).forEach(function(f){if(okSt(f)) tst(santriThumb(ROOT+f));});});
         });
       }catch(e){}
       var stKey=st.length+":"+(st[0]||"")+":"+(st[st.length-1]||""), stSudah=false;
@@ -3149,9 +3241,9 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
       }).then(function(es){
         var jatah=Infinity, sempit=false;
         if(es&&es.quota){jatah=Math.max(0,(es.quota-(es.usage||0))*0.85); if(jatah<60000000){fu=[];vi=[];sempit=true;}}
-        if(lambat){fu=[];vi=[];}
+        if(lambat||!pemilik){fu=[];vi=[];}
         mulai(jatah,sempit);
-      }).catch(function(){siapJalan=false;});
+      }).catch(function(){siapJalan=false;selesaiAwal();});
 
       function mulai(jatah,sempit){
         var W={th:1,fu:4,vi:20,st:1};
@@ -3160,9 +3252,9 @@ html .sgal .sc,html .day,html .day:not(.has),html .day:disabled:not(.has),html .
         Object.keys(per).forEach(function(o){for(var i=0;i<per[o].length;i+=10) grp.push({o:+o,ids:per[o].slice(i,i+10)});});
         var nTot=th.length+fu.length+vi.length+st.length;
         var total=th.length*W.th+fu.length*W.fu+vi.length*W.vi+st.length*W.st;
-        if(!nTot){siapTanda();return;}
+        if(!nTot){siapTanda();selesaiAwal();return;}
         var selesai=0, n=0, bytes=0, tampil=0, part={}, stop=false, penuh=false, tahap="Foto kecil", tick=0;
-        var ui=siapUI(pertama&&total>=40,siapTanda);
+        var ui=siapUI(true,siapTanda,pemilik?"":"Foto-foto album disiapkan agar tampil mulus tanpa menunggu.");
         function frac(){var s=selesai; for(var k in part) s+=part[k]; return total?Math.min(1,s/total):1;}
         function gambar(){tick=0; ui.set(frac(),tahap,n+" dari "+nTot+" berkas \u00b7 "+siapFmt(tampil));}
         function minta(){if(!tick) tick=setTimeout(gambar,250);}
